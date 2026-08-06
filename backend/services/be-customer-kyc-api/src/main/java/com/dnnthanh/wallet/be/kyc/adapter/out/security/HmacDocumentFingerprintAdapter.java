@@ -44,7 +44,8 @@ public class HmacDocumentFingerprintAdapter implements DocumentFingerprintPort {
     }
 
     private String normalize(String rawDocumentNumber) {
-        String requiredDocumentNumber = Validate.notBlank(rawDocumentNumber, DOCUMENT_NUMBER_REQUIRED);
+        String requiredDocumentNumber =
+                Validate.notBlank(rawDocumentNumber, DOCUMENT_NUMBER_REQUIRED);
         String normalized =
                 StringUtils.upperCase(requiredDocumentNumber, Locale.ROOT)
                         .replaceAll("[^A-Z0-9]", StringUtils.EMPTY);

@@ -89,8 +89,10 @@ public record CustomerKyc(
         if (Objects.equals(userId, reviewerUserId)) {
             throw new BusinessException(KycErrorCode.KYC_SELF_REVIEW_FORBIDDEN);
         }
-        KycReviewDecision requiredDecision = Objects.requireNonNull(decision, REVIEW_DECISION_REQUIRED);
-        if (requiredDecision == KycReviewDecision.REJECT && StringUtils.isBlank(rejectionReasonCode)) {
+        KycReviewDecision requiredDecision =
+                Objects.requireNonNull(decision, REVIEW_DECISION_REQUIRED);
+        if (requiredDecision == KycReviewDecision.REJECT
+                && StringUtils.isBlank(rejectionReasonCode)) {
             throw new BusinessException(KycErrorCode.KYC_REJECTION_REASON_REQUIRED);
         }
 
