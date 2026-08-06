@@ -24,7 +24,6 @@ Verified architecture:
 - Private-key-JWT implementation head before final documentation: `caac53f422013ac129b983168f429ebd1bd1d708`.
 - Binary DOCX fix commit: `a8a2ccd6c14732d539a3ec5a918723df16d20da4`.
 - Final specification content SHA: `a0719702d3cc686ce9eb133a822a8f4ea2c541e3`.
-- Final verification report content SHA: `ecbc15523cecfdca4c350ab28c131db2c0fa6e5a`.
 - TDD/intermediate commits intentionally remain unsquashed because the repository owner will perform the final squash.
 - No merge into `develop` or `master` is part of this verification.
 
