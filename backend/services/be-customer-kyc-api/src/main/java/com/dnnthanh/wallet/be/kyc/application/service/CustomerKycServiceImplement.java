@@ -103,7 +103,7 @@ public class CustomerKycServiceImplement
                 saved.kycId(),
                 reviewerUserId,
                 command.decision(),
-                command.rejectionReasonCode(),
+                saved.rejectionReasonCode(),
                 now);
         appendStatusChange(current.status(), saved, now);
         return KycView.from(saved);
