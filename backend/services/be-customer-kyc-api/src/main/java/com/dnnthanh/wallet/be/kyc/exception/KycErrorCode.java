@@ -26,6 +26,10 @@ public enum KycErrorCode implements ErrorCode {
     KYC_DOCUMENT_ALREADY_EXISTS(
             "KYC_DOCUMENT_ALREADY_EXISTS",
             "error.kyc.document-already-exists",
+            HttpStatus.CONFLICT),
+    KYC_CONCURRENT_MODIFICATION(
+            "KYC_CONCURRENT_MODIFICATION",
+            "error.kyc.concurrent-modification",
             HttpStatus.CONFLICT);
 
     private final String code;

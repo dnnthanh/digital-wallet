@@ -29,7 +29,7 @@ public class CustomerKycEntity {
     @Column(name = "user_id", nullable = false, updatable = false)
     private String userId;
 
-    @Column(name = "scope_path", nullable = false, updatable = false)
+    @Column(name = "scope_path", nullable = false, updatable = false, length = 512)
     private String scopePath;
 
     @Column(name = "legal_name", nullable = false)
@@ -57,7 +57,7 @@ public class CustomerKycEntity {
     @Column(name = "document_expires_at", nullable = false)
     private LocalDate documentExpiresAt;
 
-    @Column(name = "address_line1", nullable = false)
+    @Column(name = "address_line1", nullable = false, length = 512)
     private String addressLine1;
 
     @Column(name = "city", nullable = false)
@@ -79,7 +79,7 @@ public class CustomerKycEntity {
     @Column(name = "reviewed_by")
     private String reviewedBy;
 
-    @Column(name = "rejection_reason_code")
+    @Column(name = "rejection_reason_code", length = 128)
     private String rejectionReasonCode;
 
     @Column(name = "created_at", nullable = false, updatable = false)
