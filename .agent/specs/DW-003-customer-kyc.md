@@ -16,6 +16,7 @@ DW-003 owns:
 - customer self-service read, draft update, and submission flows;
 - operator review with verify/reject decisions;
 - PostgreSQL persistence and append-only Liquibase migrations;
+- append-only review-decision audit evidence that survives later edits of a rejected profile;
 - sensitive identity-data minimization: raw government document numbers are never persisted, logged, cached, or emitted to Kafka;
 - HMAC-SHA256 document fingerprinting with an environment-provided secret and persisted last-four display value;
 - immutable status-transition rules and optimistic concurrency protection;
@@ -112,7 +113,7 @@ Rules:
 
 - `VERIFIED` is terminal in DW-003;
 - a customer cannot modify `PENDING_REVIEW` or `VERIFIED` data;
-- changing a `REJECTED` profile clears the previous review metadata and returns it to `DRAFT`;
+- changing a `REJECTED` profile clears the previous review metadata from the current aggregate and returns it to `DRAFT`, while append-only review audit evidence remains intact;
 - only `DRAFT` can be submitted;
 - only `PENDING_REVIEW` can be verified or rejected;
 - rejection requires a stable non-blank `rejectionReasonCode`;
@@ -200,6 +201,21 @@ Required constraints:
 - `version` for optimistic locking;
 - timestamps stored as UTC-capable `timestamptz`.
 
+### `kyc_review_audit`
+
+Append-only evidence for each successful operator review. It is not rewritten when a rejected profile later returns to `DRAFT`.
+
+Minimum fields:
+
+- `audit_id` UUID primary key;
+- `kyc_id` UUID foreign key to `customer_kyc`;
+- `reviewer_user_id` Keycloak subject;
+- `decision`;
+- normalized `rejection_reason_code`, nullable for verify;
+- `reviewed_at` timestamptz.
+
+The audit row intentionally excludes legal name, birth date, document data, address, authorization token, and HMAC material.
+
 ### `kyc_outbox_event`
 
 Stores a local transactional outbox row in the same database transaction as each KYC status change.
@@ -246,7 +262,8 @@ KYC defines stable error codes with platform `ErrorCode` semantics:
 - `KYC_SELF_REVIEW_FORBIDDEN` -> 403;
 - `KYC_SCOPE_REQUIRED` -> 403;
 - `KYC_AUTHORIZATION_UNAVAILABLE` -> 503;
-- `KYC_DOCUMENT_ALREADY_EXISTS` -> 409.
+- `KYC_DOCUMENT_ALREADY_EXISTS` -> 409;
+- `KYC_CONCURRENT_MODIFICATION` -> 409.
 
 Bean Validation handles request-shape errors through the existing platform validation path.
 
@@ -255,8 +272,9 @@ Bean Validation handles request-shape errors through the existing platform valid
 - each write use case is one local database transaction;
 - optimistic versioning prevents lost updates and duplicate review transitions;
 - uniqueness constraints protect one profile per Keycloak subject and one document fingerprint;
-- concurrent submissions/reviews must result in one valid state transition and a conflict for stale competitors;
-- status transition and outbox insert are atomic;
+- concurrent submissions/reviews and same-owner create races must result in one valid write and `KYC_CONCURRENT_MODIFICATION` for stale competitors;
+- review state change, review audit insert, and status outbox insert are atomic within the review transaction;
+- status transition and outbox insert are atomic for all other status-changing use cases;
 - no network call occurs inside the database transaction except authorization resolution completed before entering the transactional application operation.
 
 ## Observability and audit
@@ -265,29 +283,30 @@ Bean Validation handles request-shape errors through the existing platform valid
 - do not manually propagate `traceparent`/`tracestate`;
 - log only identifiers, actor id/type, action, status transition, outcome, and latency-safe metadata;
 - never log the KYC draft request/body or sensitive values;
-- review decision stores `reviewedBy` and timestamps for immutable business audit evidence.
+- current review metadata may be cleared when a rejected profile is edited, but `kyc_review_audit` preserves immutable reviewer subject, normalized decision/reason code, and review timestamp.
 
 ## Required verification
 
 1. domain state-machine unit tests;
-2. rejected-profile edit resets review metadata;
+2. rejected-profile edit resets current review metadata without deleting append-only review audit evidence;
 3. verified/pending profiles cannot be edited;
 4. raw document number never appears in entity/response/event persistence model;
 5. HMAC fingerprint adapter determinism and secret requirement;
 6. self-service ownership and permission tests;
 7. reviewer permission + hierarchical-scope tests;
 8. self-review denial;
-9. stable error-code mapping;
+9. stable error-code mapping, including concurrent modification conflict;
 10. PostgreSQL Testcontainers migration/repository integration;
 11. unique user/document fingerprint constraints;
 12. optimistic-concurrency transition test;
-13. atomic KYC status + outbox row integration test;
+13. atomic KYC status + outbox row integration test and transactional review-audit service wiring;
 14. Keycloak realm contract for KYC roles/composites;
-15. Maven verify and Spotless;
-16. repository-quality gate;
-17. root and split Docker Compose validation;
-18. Dockerfile BuildKit validation for `be-customer-kyc-api`;
-19. GitHub Actions status inspected on the final pushed head.
+15. full Spring Security 401/403 integration coverage for KYC endpoints;
+16. Maven verify and Spotless;
+17. repository-quality gate;
+18. root and split Docker Compose validation;
+19. Dockerfile BuildKit validation for `be-customer-kyc-api`;
+20. GitHub Actions status inspected on the final pushed head.
 
 ## Definition of done
 
