@@ -60,7 +60,6 @@ jobs:
           POSTGRES_PASSWORD: ci-only-placeholder
           KEYCLOAK_DB_PASSWORD: ci-only-placeholder
           KEYCLOAK_ADMIN_PASSWORD: ci-only-placeholder
-          AUTH_KEYCLOAK_CLIENT_SECRET: ci-only-placeholder
           KEYCLOAK_DEMO_USER_PASSWORD: ci-only-placeholder
         run: |
           docker compose -f docker-compose.yml config >/dev/null
@@ -84,8 +83,10 @@ jobs:
       POSTGRES_PASSWORD: ci-only-postgres-password
       KEYCLOAK_DB_PASSWORD: ci-only-keycloak-db-password
       KEYCLOAK_ADMIN_PASSWORD: ci-only-keycloak-admin-password
-      AUTH_KEYCLOAK_CLIENT_SECRET: ci-only-auth-client-secret
       KEYCLOAK_DEMO_USER_PASSWORD: ci-only-demo-user-password
+      AUTH_KEYCLOAK_CLIENT_ID: be-auth-api
+      AUTH_KEYCLOAK_KEY_ID: be-auth-api-key-1
+      AUTH_KEYCLOAK_ASSERTION_TTL: PT30S
     steps:
       - uses: actions/checkout@v6
       - name: Build and start auth runtime stack
@@ -100,17 +101,49 @@ jobs:
             sleep 5
           done
           exit 1
-      - name: Verify Keycloak-backed service authentication
+      - name: Verify Keycloak private_key_jwt service authentication
+        shell: bash
         run: |
+          set -euo pipefail
+          docker compose run --rm --no-deps --entrypoint cat auth-keygen /keys/client-private.pem > /tmp/client-private.pem
+          chmod 0600 /tmp/client-private.pem
+
+          base64url() {
+            openssl base64 -A | tr '+/' '-_' | tr -d '='
+          }
+
+          TOKEN_URI='http://localhost:8180/realms/digital-wallet/protocol/openid-connect/token'
+          NOW="$(date +%s)"
+          EXP="$((NOW + 30))"
+          JTI="$(cat /proc/sys/kernel/random/uuid)"
+          HEADER="$(printf '%s' '{"alg":"RS256","typ":"JWT","kid":"be-auth-api-key-1"}' | base64url)"
+          PAYLOAD="$(jq -cn \
+            --arg iss 'be-auth-api' \
+            --arg aud "${TOKEN_URI}" \
+            --arg jti "${JTI}" \
+            --argjson iat "${NOW}" \
+            --argjson exp "${EXP}" \
+            '{iss:$iss,sub:$iss,aud:$aud,iat:$iat,exp:$exp,jti:$jti}' | base64url)"
+          SIGNING_INPUT="${HEADER}.${PAYLOAD}"
+          SIGNATURE="$(printf '%s' "${SIGNING_INPUT}" \
+            | openssl dgst -sha256 -sign /tmp/client-private.pem -binary \
+            | base64url)"
+          CLIENT_ASSERTION="${SIGNING_INPUT}.${SIGNATURE}"
+
           TOKEN_RESPONSE="$(curl -fsS \
             --request POST \
             --header 'Content-Type: application/x-www-form-urlencoded' \
             --data-urlencode 'grant_type=client_credentials' \
             --data-urlencode 'client_id=be-auth-api' \
-            --data-urlencode "client_secret=${AUTH_KEYCLOAK_CLIENT_SECRET}" \
-            http://localhost:8180/realms/digital-wallet/protocol/openid-connect/token)"
+            --data-urlencode 'client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer' \
+            --data-urlencode "client_assertion=${CLIENT_ASSERTION}" \
+            "${TOKEN_URI}")"
           ACCESS_TOKEN="$(jq -er '.access_token' <<<"${TOKEN_RESPONSE}")"
           echo "::add-mask::${ACCESS_TOKEN}"
+
+          JWKS="$(curl -fsS http://localhost:8081/.well-known/wallet-client-jwks.json)"
+          jq -e '.keys[0].kid == "be-auth-api-key-1" and .keys[0].kty == "RSA" and (.keys[0] | has("d") | not)' \
+            <<<"${JWKS}" >/dev/null
 
           PROFILE="$(curl -fsS \
             --header "Authorization: Bearer ${ACCESS_TOKEN}" \

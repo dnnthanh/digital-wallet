@@ -1,5 +1,6 @@
 package com.dnnthanh.wallet.be.platform.config;
 
+import java.time.Duration;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -10,7 +11,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class InternalSecurityProperties {
     private String tokenUri;
     private String clientId;
-    private String clientSecret;
+    private String privateKeyLocation;
+    private String keyId = "be-auth-api-key-1";
+    private Duration assertionTtl = Duration.ofSeconds(30);
+    private String clientAssertionAudience;
     private String requiredAudience;
     private String requiredServiceRole;
 }

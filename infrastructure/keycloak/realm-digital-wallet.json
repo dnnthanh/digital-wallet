@@ -36,14 +36,18 @@
       "name" : "Digital Wallet Auth API",
       "enabled" : true,
       "protocol" : "openid-connect",
-      "clientAuthenticatorType" : "client-secret",
+      "clientAuthenticatorType" : "client-jwt",
       "publicClient" : false,
-      "secret" : "${AUTH_KEYCLOAK_CLIENT_SECRET}",
       "serviceAccountsEnabled" : true,
       "standardFlowEnabled" : false,
       "implicitFlowEnabled" : false,
       "directAccessGrantsEnabled" : false,
-      "fullScopeAllowed" : true
+      "fullScopeAllowed" : true,
+      "attributes" : {
+        "use.jwks.url" : "true",
+        "jwks.url" : "http://be-auth-api:8080/.well-known/wallet-client-jwks.json",
+        "token.endpoint.auth.signing.alg" : "RS256"
+      }
     }
   ],
   "groups" : [

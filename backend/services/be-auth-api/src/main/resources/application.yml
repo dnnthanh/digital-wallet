@@ -24,7 +24,10 @@ wallet:
   internal-security:
     token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8180/realms/digital-wallet/protocol/openid-connect/token}
     client-id: ${AUTH_KEYCLOAK_CLIENT_ID:be-auth-api}
-    client-secret: ${AUTH_KEYCLOAK_CLIENT_SECRET:}
+    private-key-location: ${AUTH_KEYCLOAK_PRIVATE_KEY_LOCATION:}
+    key-id: ${AUTH_KEYCLOAK_KEY_ID:be-auth-api-key-1}
+    assertion-ttl: ${AUTH_KEYCLOAK_ASSERTION_TTL:PT30S}
+    client-assertion-audience: ${AUTH_KEYCLOAK_ASSERTION_AUDIENCE:}
 
 management:
   endpoints:

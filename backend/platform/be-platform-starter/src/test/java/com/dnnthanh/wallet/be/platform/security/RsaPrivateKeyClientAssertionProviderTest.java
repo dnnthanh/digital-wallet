@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -60,7 +61,7 @@ class RsaPrivateKeyClientAssertionProviderTest {
         assertThat(assertion.getJWTClaimsSet().getIssuer()).isEqualTo("be-auth-api");
         assertThat(assertion.getJWTClaimsSet().getSubject()).isEqualTo("be-auth-api");
         assertThat(assertion.getJWTClaimsSet().getAudience()).containsExactly("http://keycloak/token");
-        assertThat(assertion.getJWTClaimsSet().getIssueTime()).hasToString("Thu Aug 06 10:00:00 UTC 2026");
+        assertThat(assertion.getJWTClaimsSet().getIssueTime().toInstant()).isEqualTo(now);
         assertThat(assertion.getJWTClaimsSet().getExpirationTime().toInstant())
                 .isEqualTo(now.plusSeconds(30));
         assertThat(assertion.getJWTClaimsSet().getJWTID()).isNotBlank();
@@ -68,7 +69,10 @@ class RsaPrivateKeyClientAssertionProviderTest {
 
         Map<String, Object> jwkSet = provider.jwkSet();
         assertThat(jwkSet).containsKey("keys");
-        assertThat(jwkSet.toString()).contains("be-auth-api-key-1");
-        assertThat(jwkSet.toString()).doesNotContain("\"d\"");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> keys = (List<Map<String, Object>>) jwkSet.get("keys");
+        assertThat(keys).hasSize(1);
+        assertThat(keys.getFirst()).containsEntry("kid", "be-auth-api-key-1");
+        assertThat(keys.getFirst()).doesNotContainKey("d");
     }
 }

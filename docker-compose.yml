@@ -64,6 +64,17 @@ services:
     networks:
       - wallet
 
+  auth-keygen:
+    image: alpine:3.22
+    command:
+      - /bin/sh
+      - -c
+      - apk add --no-cache openssl >/dev/null && /usr/local/bin/generate-auth-client-key.sh
+    volumes:
+      - ./infrastructure/keycloak/generate-auth-client-key.sh:/usr/local/bin/generate-auth-client-key.sh:ro
+      - auth-client-key:/keys
+    restart: "no"
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.7.0
     command: [start-dev, --import-realm]
@@ -78,7 +89,6 @@ services:
       KC_METRICS_ENABLED: "true"
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME: http://localhost:8180
-      AUTH_KEYCLOAK_CLIENT_SECRET: ${AUTH_KEYCLOAK_CLIENT_SECRET:?AUTH_KEYCLOAK_CLIENT_SECRET is required}
       KEYCLOAK_DEMO_USER_PASSWORD: ${KEYCLOAK_DEMO_USER_PASSWORD:?KEYCLOAK_DEMO_USER_PASSWORD is required}
       JAVA_OPTS_APPEND: -Xms128m -Xmx384m
     ports:
@@ -112,12 +122,19 @@ services:
       KEYCLOAK_BASE_URL: http://keycloak:8080
       KEYCLOAK_REALM: digital-wallet
       KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/digital-wallet/protocol/openid-connect/token
-      AUTH_KEYCLOAK_CLIENT_ID: be-auth-api
-      AUTH_KEYCLOAK_CLIENT_SECRET: ${AUTH_KEYCLOAK_CLIENT_SECRET:?AUTH_KEYCLOAK_CLIENT_SECRET is required}
+      AUTH_KEYCLOAK_CLIENT_ID: ${AUTH_KEYCLOAK_CLIENT_ID:-be-auth-api}
+      AUTH_KEYCLOAK_PRIVATE_KEY_LOCATION: file:/run/wallet-auth-key/client-private.pem
+      AUTH_KEYCLOAK_KEY_ID: ${AUTH_KEYCLOAK_KEY_ID:-be-auth-api-key-1}
+      AUTH_KEYCLOAK_ASSERTION_TTL: ${AUTH_KEYCLOAK_ASSERTION_TTL:-PT30S}
+      AUTH_KEYCLOAK_ASSERTION_AUDIENCE: http://localhost:8180/realms/digital-wallet/protocol/openid-connect/token
       AUTH_CACHE_TTL: ${AUTH_CACHE_TTL:-PT2M}
     ports:
       - 8081:8080
+    volumes:
+      - auth-client-key:/run/wallet-auth-key:ro
     depends_on:
+      auth-keygen:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       keycloak:
@@ -135,6 +152,7 @@ volumes:
   postgres-data:
   redis-data:
   kafka-data:
+  auth-client-key:
 networks:
   wallet:
     name: digital-wallet-network
