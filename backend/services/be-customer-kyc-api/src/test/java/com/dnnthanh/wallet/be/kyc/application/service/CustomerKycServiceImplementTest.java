@@ -87,6 +87,34 @@ class CustomerKycServiceImplementTest {
     }
 
     @Test
+    void editingRejectedDraftEmitsRejectedToDraftEvent() {
+        CustomerKyc rejected =
+                draft(USER_ID, SCOPE)
+                        .submit(NOW.minusSeconds(90))
+                        .review(
+                                KycReviewDecision.REJECT,
+                                REVIEWER_ID,
+                                "DOC_UNCLEAR",
+                                NOW.minusSeconds(60));
+        when(currentActorPort.userId()).thenReturn(USER_ID);
+        when(authorizationPort.requireCustomerScope()).thenReturn(SCOPE);
+        when(fingerprintPort.fingerprint("123456789012"))
+                .thenReturn(new DocumentFingerprint("fingerprint-2", "9012"));
+        when(repository.findByUserId(USER_ID)).thenReturn(Optional.of(rejected));
+        when(repository.save(any(CustomerKyc.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        KycView result = service.upsertMyDraft(command("123456789012"));
+
+        ArgumentCaptor<KycStatusChangedPayload> event =
+                ArgumentCaptor.forClass(KycStatusChangedPayload.class);
+        verify(outboxPort).appendStatusChanged(event.capture());
+        assertThat(result.status()).isEqualTo(KycStatus.DRAFT);
+        assertThat(event.getValue().previousStatus()).isEqualTo(KycStatus.REJECTED);
+        assertThat(event.getValue().currentStatus()).isEqualTo(KycStatus.DRAFT);
+    }
+
+    @Test
     void submitPersistsTransitionAndAppendsMinimalStatusEvent() {
         CustomerKyc draft = draft(USER_ID, SCOPE);
         when(currentActorPort.userId()).thenReturn(USER_ID);

@@ -35,4 +35,19 @@ class RequestKycAuthorizationTest {
                                 assertThat(exception.getErrorCode())
                                         .isEqualTo(KycErrorCode.KYC_SCOPE_REQUIRED));
     }
+
+    @Test
+    void unrelatedLeafScopesFailClosedInsteadOfChoosingArbitrarily() {
+        RequestKycAuthorization authorization =
+                new RequestKycAuthorization(
+                        new CurrentAuthorization(
+                                Set.of("kyc:self:write"), Set.of("/bank/a", "/bank/b")));
+
+        assertThatThrownBy(authorization::requireCustomerScope)
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        exception ->
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(KycErrorCode.KYC_SCOPE_REQUIRED));
+    }
 }

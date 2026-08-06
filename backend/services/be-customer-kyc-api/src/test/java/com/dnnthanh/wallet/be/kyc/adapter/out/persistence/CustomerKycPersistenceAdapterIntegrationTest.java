@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -87,6 +88,14 @@ class CustomerKycPersistenceAdapterIntegrationTest {
                         exception ->
                                 assertThat(exception.getErrorCode())
                                         .isEqualTo(KycErrorCode.KYC_DOCUMENT_ALREADY_EXISTS));
+    }
+
+    @Test
+    void duplicateUserIdIsRejectedByDatabase() {
+        repository.save(draft("user-1", "fingerprint-1"));
+
+        assertThatThrownBy(() -> repository.save(draft("user-1", "fingerprint-2")))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
