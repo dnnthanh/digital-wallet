@@ -1,2 +1,3 @@
 com.dnnthanh.wallet.be.platform.autoconfigure.PlatformWebAutoConfiguration
 com.dnnthanh.wallet.be.platform.autoconfigure.PlatformObservabilityAutoConfiguration
+com.dnnthanh.wallet.be.platform.autoconfigure.PlatformSecurityAutoConfiguration

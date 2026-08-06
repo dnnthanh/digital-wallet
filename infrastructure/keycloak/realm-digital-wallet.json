@@ -1,9 +1,97 @@
 {
-  "realm": "digital-wallet",
-  "enabled": true,
-  "displayName": "Digital Wallet",
-  "registrationAllowed": false,
-  "loginWithEmailAllowed": true,
-  "duplicateEmailsAllowed": false,
-  "resetPasswordAllowed": true
+  "realm" : "digital-wallet",
+  "enabled" : true,
+  "displayName" : "Digital Wallet",
+  "registrationAllowed" : false,
+  "loginWithEmailAllowed" : true,
+  "duplicateEmailsAllowed" : false,
+  "resetPasswordAllowed" : true,
+  "roles" : {
+    "realm" : [
+      {
+        "name" : "SERVICE_ACCOUNT",
+        "description" : "Marks non-human client-credentials principals",
+        "composite" : false
+      },
+      {
+        "name" : "permission:self:read",
+        "description" : "Read the authenticated principal profile, permissions and scopes",
+        "composite" : false
+      },
+      {
+        "name" : "role:wallet-user",
+        "description" : "Base wallet user role",
+        "composite" : true,
+        "composites" : {
+          "realm" : [
+            "permission:self:read"
+          ]
+        }
+      }
+    ]
+  },
+  "clients" : [
+    {
+      "clientId" : "be-auth-api",
+      "name" : "Digital Wallet Auth API",
+      "enabled" : true,
+      "protocol" : "openid-connect",
+      "clientAuthenticatorType" : "client-secret",
+      "publicClient" : false,
+      "secret" : "${AUTH_KEYCLOAK_CLIENT_SECRET}",
+      "serviceAccountsEnabled" : true,
+      "standardFlowEnabled" : false,
+      "implicitFlowEnabled" : false,
+      "directAccessGrantsEnabled" : false,
+      "fullScopeAllowed" : true
+    }
+  ],
+  "groups" : [
+    {
+      "name" : "bank",
+      "subGroups" : [
+        {
+          "name" : "demo-branch"
+        }
+      ]
+    }
+  ],
+  "users" : [
+    {
+      "username" : "wallet-demo",
+      "enabled" : true,
+      "emailVerified" : true,
+      "firstName" : "Wallet",
+      "lastName" : "Demo",
+      "credentials" : [
+        {
+          "type" : "password",
+          "value" : "${KEYCLOAK_DEMO_USER_PASSWORD}",
+          "temporary" : false
+        }
+      ],
+      "realmRoles" : [
+        "role:wallet-user"
+      ],
+      "groups" : [
+        "/bank/demo-branch"
+      ]
+    },
+    {
+      "username" : "service-account-be-auth-api",
+      "enabled" : true,
+      "serviceAccountClientId" : "be-auth-api",
+      "realmRoles" : [
+        "SERVICE_ACCOUNT"
+      ],
+      "clientRoles" : {
+        "realm-management" : [
+          "view-users",
+          "view-realm",
+          "query-users",
+          "query-groups"
+        ]
+      }
+    }
+  ]
 }

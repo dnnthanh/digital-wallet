@@ -1,5 +1,9 @@
 name: digital-wallet
-services: {}
+services:
+  be-auth-api:
+    extends:
+      file: compose/backend/auth.yml
+      service: be-auth-api
 networks:
   wallet:
     name: digital-wallet-network

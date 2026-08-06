@@ -29,7 +29,8 @@ public class SecurityConfiguration {
                                                 "/actuator/prometheus",
                                                 "/error")
                                         .permitAll()
-                                        .requestMatchers("/private/**", "/internal/**")
+                                        .requestMatchers(
+                                                "/api/v1/**", "/private/**", "/internal/**")
                                         .authenticated()
                                         .anyRequest()
                                         .permitAll())
