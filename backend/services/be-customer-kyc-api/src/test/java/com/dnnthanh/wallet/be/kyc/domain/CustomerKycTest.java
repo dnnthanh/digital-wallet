@@ -17,7 +17,8 @@ class CustomerKycTest {
 
     @Test
     void createDraftStartsInDraft() {
-        CustomerKyc kyc = CustomerKyc.createDraft(UUID.randomUUID(), USER_ID, SCOPE, profile("fp-1"), NOW);
+        CustomerKyc kyc =
+                CustomerKyc.createDraft(UUID.randomUUID(), USER_ID, SCOPE, profile("fp-1"), NOW);
 
         assertThat(kyc.status()).isEqualTo(KycStatus.DRAFT);
         assertThat(kyc.submittedAt()).isNull();
@@ -39,28 +40,34 @@ class CustomerKycTest {
         assertThatThrownBy(() -> pending.updateDraft(profile("fp-2"), NOW.plusSeconds(60)))
                 .isInstanceOfSatisfying(
                         BusinessException.class,
-                        exception -> assertThat(exception.getErrorCode()).isEqualTo(KycErrorCode.KYC_NOT_EDITABLE));
+                        exception ->
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(KycErrorCode.KYC_NOT_EDITABLE));
     }
 
     @Test
     void verifiedProfileCannotBeEdited() {
         CustomerKyc verified =
-                draft()
-                        .submit(NOW.plusSeconds(30))
+                draft().submit(NOW.plusSeconds(30))
                         .review(KycReviewDecision.VERIFY, "reviewer-1", null, NOW.plusSeconds(60));
 
         assertThatThrownBy(() -> verified.updateDraft(profile("fp-2"), NOW.plusSeconds(90)))
                 .isInstanceOfSatisfying(
                         BusinessException.class,
-                        exception -> assertThat(exception.getErrorCode()).isEqualTo(KycErrorCode.KYC_NOT_EDITABLE));
+                        exception ->
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(KycErrorCode.KYC_NOT_EDITABLE));
     }
 
     @Test
     void editingRejectedProfileReturnsToDraftAndClearsReviewMetadata() {
         CustomerKyc rejected =
-                draft()
-                        .submit(NOW.plusSeconds(30))
-                        .review(KycReviewDecision.REJECT, "reviewer-1", "DOC_UNCLEAR", NOW.plusSeconds(60));
+                draft().submit(NOW.plusSeconds(30))
+                        .review(
+                                KycReviewDecision.REJECT,
+                                "reviewer-1",
+                                "DOC_UNCLEAR",
+                                NOW.plusSeconds(60));
 
         CustomerKyc updated = rejected.updateDraft(profile("fp-2"), NOW.plusSeconds(90));
 
@@ -76,14 +83,22 @@ class CustomerKycTest {
         assertThatThrownBy(() -> draft().review(KycReviewDecision.VERIFY, "reviewer-1", null, NOW))
                 .isInstanceOfSatisfying(
                         BusinessException.class,
-                        exception -> assertThat(exception.getErrorCode()).isEqualTo(KycErrorCode.KYC_NOT_REVIEWABLE));
+                        exception ->
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(KycErrorCode.KYC_NOT_REVIEWABLE));
     }
 
     @Test
     void rejectionRequiresStableReasonCode() {
         CustomerKyc pending = draft().submit(NOW.plusSeconds(30));
 
-        assertThatThrownBy(() -> pending.review(KycReviewDecision.REJECT, "reviewer-1", "  ", NOW.plusSeconds(60)))
+        assertThatThrownBy(
+                        () ->
+                                pending.review(
+                                        KycReviewDecision.REJECT,
+                                        "reviewer-1",
+                                        "  ",
+                                        NOW.plusSeconds(60)))
                 .isInstanceOfSatisfying(
                         BusinessException.class,
                         exception ->
@@ -95,7 +110,13 @@ class CustomerKycTest {
     void reviewerCannotReviewOwnProfile() {
         CustomerKyc pending = draft().submit(NOW.plusSeconds(30));
 
-        assertThatThrownBy(() -> pending.review(KycReviewDecision.VERIFY, USER_ID, null, NOW.plusSeconds(60)))
+        assertThatThrownBy(
+                        () ->
+                                pending.review(
+                                        KycReviewDecision.VERIFY,
+                                        USER_ID,
+                                        null,
+                                        NOW.plusSeconds(60)))
                 .isInstanceOfSatisfying(
                         BusinessException.class,
                         exception ->

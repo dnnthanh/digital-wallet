@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 class HmacDocumentFingerprintAdapterTest {
     @Test
     void sameNormalizedDocumentAndSecretProduceSameFingerprint() {
-        HmacDocumentFingerprintAdapter adapter = new HmacDocumentFingerprintAdapter("test-secret-a");
+        HmacDocumentFingerprintAdapter adapter =
+                new HmacDocumentFingerprintAdapter("test-secret-a");
 
         DocumentFingerprint first = adapter.fingerprint(" ab-12 34 ");
         DocumentFingerprint second = adapter.fingerprint("AB1234");
