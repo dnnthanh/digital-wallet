@@ -15,6 +15,7 @@ import com.dnnthanh.wallet.be.kyc.application.port.out.CustomerKycRepositoryPort
 import com.dnnthanh.wallet.be.kyc.application.port.out.DocumentFingerprintPort;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycAuthorizationPort;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycOutboxPort;
+import com.dnnthanh.wallet.be.kyc.application.port.out.KycReviewAuditPort;
 import com.dnnthanh.wallet.be.kyc.domain.CustomerKyc;
 import com.dnnthanh.wallet.be.kyc.domain.KycProfile;
 import com.dnnthanh.wallet.be.kyc.domain.KycStatus;
@@ -38,6 +39,7 @@ public class CustomerKycServiceImplement
     private final CustomerKycRepositoryPort repository;
     private final DocumentFingerprintPort fingerprintPort;
     private final KycOutboxPort outboxPort;
+    private final KycReviewAuditPort reviewAuditPort;
     private final CurrentActorPort currentActorPort;
     private final KycAuthorizationPort authorizationPort;
     private final Clock clock;
@@ -92,13 +94,17 @@ public class CustomerKycServiceImplement
         CustomerKyc current = findReviewTarget(kycId);
         requireTargetScope(current);
         Instant now = clock.instant();
+        String reviewerUserId = currentActorPort.userId();
         CustomerKyc reviewed =
                 current.review(
-                        command.decision(),
-                        currentActorPort.userId(),
-                        command.rejectionReasonCode(),
-                        now);
+                        command.decision(), reviewerUserId, command.rejectionReasonCode(), now);
         CustomerKyc saved = repository.save(reviewed);
+        reviewAuditPort.appendReview(
+                saved.kycId(),
+                reviewerUserId,
+                command.decision(),
+                command.rejectionReasonCode(),
+                now);
         appendStatusChange(current.status(), saved, now);
         return KycView.from(saved);
     }
