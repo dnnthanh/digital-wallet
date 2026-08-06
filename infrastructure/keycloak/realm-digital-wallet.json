@@ -1,0 +1,9 @@
+{
+  "realm": "digital-wallet",
+  "enabled": true,
+  "displayName": "Digital Wallet",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true
+}

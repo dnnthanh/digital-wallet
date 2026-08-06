@@ -1,0 +1,5 @@
+name: digital-wallet
+services: {}
+networks:
+  wallet:
+    name: digital-wallet-network
