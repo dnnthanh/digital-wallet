@@ -2,26 +2,29 @@
 
 ## Scope verified
 
-DW-002 delivers the authentication/authorization foundation only. It does not implement Ledger, Transfer, KYC, wallet-account, limits, fraud, settlement, or other future business-domain behavior.
+DW-002 delivers only the shared authentication and authorization foundation. It does not implement Ledger, Transfer, KYC, wallet-account, limits, fraud, settlement, or other future business-domain behavior.
 
 Verified architecture:
+
 - Keycloak remains the authentication and authorization source of truth.
-- JWT carries compact identity/realm-role information; effective permissions and authorization scopes are resolved server-side.
-- Keycloak composite realm roles model `role -> permission` aggregation.
-- Keycloak group paths model hierarchical authorization scope.
+- JWT supplies compact identity/realm-role data.
+- Effective permissions are resolved from Keycloak composite realm roles.
+- Hierarchical scopes are resolved from Keycloak group paths.
 - `be-auth-api` follows Hexagonal boundaries and owns no IAM database.
-- Redis is a typed bounded-TTL cache only; cache failure falls through to Keycloak and never grants access.
-- `be-auth-api` keeps one Keycloak service-account client; no separate admin client was introduced.
-- machine authentication uses Client Credentials plus RFC 7523 `private_key_jwt`, not a shared client secret.
-- Kafka consumers and scheduled jobs establish explicit local technical actors and obtain an M2M token only when crossing a protected downstream boundary.
+- Redis is a bounded-TTL typed cache, never an authorization authority.
+- One Keycloak service-account client, `be-auth-api`, is retained; no separate admin client was introduced.
+- Machine authentication uses Client Credentials plus RFC 7523 `private_key_jwt`, not a shared client secret.
+- Kafka consumers and scheduled jobs use explicit technical actors and request an M2M token only when crossing a protected downstream boundary.
 
-## Branch and baseline
+## Branch and delivery baseline
 
-- Base branch: `develop`
-- Base commit: `2f29e5bb9fc5981d96d813027d1a5a060373677f` (`feat: add DW-001 platform foundation`)
-- Feature branch: `feature/platform-foundation`
-- Current private-key-JWT implementation head before final documentation commits: `caac53f422013ac129b983168f429ebd1bd1d708`.
-- TDD/intermediate commits intentionally remain on the branch because the owner requested to perform the final squash personally.
+- Base branch: `develop`.
+- Base commit: `2f29e5bb9fc5981d96d813027d1a5a060373677f`.
+- Feature branch: `feature/platform-foundation`.
+- Private-key-JWT implementation head before final documentation: `caac53f422013ac129b983168f429ebd1bd1d708`.
+- Binary DOCX fix commit: `a8a2ccd6c14732d539a3ec5a918723df16d20da4`.
+- Final spec commit: `4fcc4b418dcdd9556a829effdc3cbb7d2705ffd4`.
+- TDD/intermediate commits intentionally remain unsquashed because the repository owner will perform the final squash.
 - No merge into `develop` or `master` is part of this verification.
 
 ## TDD evidence
@@ -29,165 +32,189 @@ Verified architecture:
 ### Service actor classification
 
 RED:
-- Commit: `55861fb1f5d124134edcbe87af7e9355965aee82`
-- Workflow run: `31081888947`
-- Expected failure: service-account JWT was classified as USER rather than SERVICE.
+
+- commit `55861fb1f5d124134edcbe87af7e9355965aee82`;
+- workflow run `31081888947`;
+- service-account JWT was incorrectly classified as USER.
 
 GREEN:
-- Service-account JWT identity maps to `UserContext.ActorType.SERVICE` while preserving authenticated JWT semantics.
-- Regression remains covered by `UserContextConfigurationTest`.
 
-### Permission and scope authorization contracts
+- JWTs containing `SERVICE_ACCOUNT` map to `UserContext.ActorType.SERVICE`;
+- regression is covered by `UserContextConfigurationTest`.
+
+### Permission and scope authorization
 
 RED:
-- Commit: `e3eed99dc0a6d84a989ee81648faefbb3b2ce82b`
-- Workflow run: `31082955668`
-- Expected failure occurred before `CurrentAuthorization` / `WalletAuthorization` existed.
+
+- commit `e3eed99dc0a6d84a989ee81648faefbb3b2ce82b`;
+- workflow run `31082955668`;
+- contracts existed before `CurrentAuthorization` and `WalletAuthorization` production classes.
 
 GREEN:
-- Permission checks fail closed.
-- Scope checks support exact/descendant paths while rejecting prefix collisions such as `/bank/a` vs `/bank/abc`.
-- Keycloak mapping/adapter, Redis cache, application resolution and self-service REST contracts are covered by tests.
 
-### Cache starter auto-configuration regression
+- permission checks fail closed;
+- scopes support exact/descendant paths;
+- prefix collision such as `/bank/a` versus `/bank/abc` is rejected;
+- Keycloak mapping, Redis cache, application resolution, and `/me/*` endpoints are covered.
 
-Runtime failure evidence:
-- Workflow run: `31085372346`
-- Real application startup exposed a missing `WalletCacheManager` because the cache starter did not publish Spring Boot `AutoConfiguration.imports` metadata.
+### Cache starter auto-configuration
+
+Runtime discovery:
+
+- workflow run `31085372346` exposed missing `WalletCacheManager` due to absent Spring Boot auto-configuration metadata.
 
 RED regression:
-- Commit: `ef88945fbdc478b7c39871c362457ca4172ccb87`
-- Workflow run: `31086215453`.
+
+- commit `ef88945fbdc478b7c39871c362457ca4172ccb87`;
+- workflow run `31086215453`.
 
 GREEN:
-- `be-platform-cache-starter` now publishes `WalletRedisCacheAutoConfiguration` through `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
-### `private_key_jwt` service authentication
+- `be-platform-cache-starter` publishes `WalletRedisCacheAutoConfiguration` through `AutoConfiguration.imports`.
+
+### `private_key_jwt`
 
 RED:
-- Commit: `954271315effa0a293d056e854da2e353034c9d1`
-- Workflow run: `31093667934`
-- Backend tests failed because the signed assertion/JWKS/system-context contracts had been introduced before their production implementations existed.
 
-GREEN contracts now cover:
-- Client Credentials request includes `client_id`, `client_assertion_type`, and `client_assertion` and does not contain `client_secret`.
-- assertion is RS256 signed with `iss=sub=client_id`, exact configured audience, short expiry, issue time and unique `jti`;
-- assertion verifies with the paired RSA public key;
-- public JWKS exposes configured `kid` and no private RSA `d` parameter;
-- Keycloak realm requires `clientAuthenticatorType=client-jwt`, `use.jwks.url=true`, the auth API JWKS URL and service account, with no client-secret literal;
-- local Compose creates/mounts private key material without committing it to Git.
+- commit `954271315effa0a293d056e854da2e353034c9d1`;
+- workflow run `31093667934`;
+- signed assertion, JWKS, and system-context tests failed before production implementation existed.
 
-### Spring internal-security startup regression
+GREEN contracts:
 
-The first real private-key-JWT runtime attempt exposed a constructor-selection issue in `RsaPrivateKeyClientAssertionProvider`: Spring saw the production constructor plus the deterministic test constructor and attempted default construction.
+- token request contains `grant_type=client_credentials`, `client_id`, `client_assertion_type`, and `client_assertion`;
+- token request does not contain `client_secret`;
+- assertion uses RS256 and contains `iss=sub=client_id`, exact configured audience, short expiration, issue time, unique `jti`, and `kid`;
+- assertion verifies against the paired RSA public key;
+- public JWKS contains the configured `kid` and no private RSA `d` parameter;
+- Keycloak realm requires `clientAuthenticatorType=client-jwt`, `use.jwks.url=true`, service account, and the auth API JWKS URL;
+- Compose generates and mounts private key material without committing it to Git.
+
+### Spring auto-configuration startup
+
+A real runtime attempt exposed constructor ambiguity in `RsaPrivateKeyClientAssertionProvider`.
 
 RED regression:
-- Commit: `9145f526b041a7ba05bf3e9abd573ad14ebc304c`
-- Workflow run: `31096263118`
-- `PlatformInternalSecurityAutoConfigurationTest` reproduced `No default constructor found` in an `ApplicationContextRunner`.
+
+- commit `9145f526b041a7ba05bf3e9abd573ad14ebc304c`;
+- workflow run `31096263118`;
+- `PlatformInternalSecurityAutoConfigurationTest` reproduced `No default constructor found` using `ApplicationContextRunner`.
 
 GREEN:
-- production constructor is explicitly selected for Spring DI;
-- implementation head: `caac53f422013ac129b983168f429ebd1bd1d708`;
-- the regression test and full Maven verify pass.
 
-### Kafka / scheduler technical contexts
+- the production constructor is explicitly selected for Spring dependency injection;
+- full Maven verify passes at implementation head `caac53f422013ac129b983168f429ebd1bd1d708`.
+
+### Kafka and scheduler context
 
 Tests verify:
-- `SystemUserContextFactory.forKafkaConsumer(serviceName)` -> `KAFKA_CONSUMER`;
-- `.forScheduler(serviceName)` -> `SCHEDULER`;
-- `.forService(serviceName)` -> `SERVICE`;
-- technical contexts carry `SERVICE_ACCOUNT` and do not require an HTTP request/SecurityContext;
-- `BaseDomainEventConsumer` exposes an explicit Kafka technical-context helper.
+
+- `forKafkaConsumer(serviceName)` creates `KAFKA_CONSUMER`;
+- `forScheduler(serviceName)` creates `SCHEDULER`;
+- `forService(serviceName)` creates `SERVICE`;
+- technical contexts carry `SERVICE_ACCOUNT` and do not require HTTP request scope;
+- `BaseDomainEventConsumer` exposes explicit Kafka technical context.
 
 Security semantics:
-- an event's initiating username/user id is provenance/business metadata, not a credential;
-- a consumer/job does not manufacture an end-user token merely to run local logic;
-- when a background executor calls a protected downstream service, it uses its M2M service token;
-- on-behalf-of/user delegation remains a separate future requirement rather than an implicit fallback.
+
+- initiating user id/username is provenance metadata, not a credential;
+- local Kafka/job execution does not require creating an end-user JWT;
+- protected downstream calls use the executor's M2M service token;
+- on-behalf-of/delegation remains an explicit future requirement.
 
 ## Implementation verification
 
-### Maven / tests
+### Maven and tests
 
-Verification command used by CI:
+CI command:
 
 ```bash
 ./mvnw -B -ntp -f backend/pom.xml verify
 ```
 
-Latest verified results on the private-key-JWT implementation:
-- `be-platform-starter`: **35 tests passed**;
-- `be-platform-cache-starter`: **5 tests passed**;
-- `be-auth-api`: **12 tests passed**;
-- total: **52 tests passed**, 0 failures, 0 errors, 0 skipped;
+Verified result:
+
+- `be-platform-starter`: 35 tests passed;
+- `be-platform-cache-starter`: 5 tests passed;
+- `be-auth-api`: 12 tests passed;
+- total: **52 passed**, 0 failures, 0 errors, 0 skipped;
 - Maven reactor BUILD SUCCESS;
-- executable `be-auth-api` Spring Boot JAR repackaging succeeds;
-- Java: Temurin JDK 25.
+- Spring Boot executable JAR repackaging succeeds;
+- Temurin JDK 25;
+- PostgreSQL and Redis Testcontainers coverage passes.
 
-Container-backed test coverage includes PostgreSQL and Redis Testcontainers.
+### Formatting and repository quality
 
-### Formatting / quality
-
-- Spotless uses google-java-format and `spotless:check` remains part of Maven verify.
-- dedicated `backend-format` CI applies Spotless and fails if committed backend sources differ afterward.
+- Spotless uses google-java-format.
+- `spotless:check` remains part of Maven verify.
+- `backend-format` runs `spotless:apply` and fails on a tracked diff.
 - repository context/spec verification passes.
 
-### Docker / Compose
+### Docker and Compose
 
 Static checks pass for:
+
 - root `docker-compose.yml`;
-- split `compose/infrastructure.yml` + `compose/backend/all.yml`;
-- BuildKit Dockerfile checks for runtime, generic `MODULE=be-auth-api`, and root backend Dockerfile.
+- split `compose/infrastructure.yml` plus `compose/backend/all.yml`;
+- runtime Dockerfile;
+- generic service Dockerfile with `MODULE=be-auth-api`;
+- root backend Dockerfile.
 
-The current Compose model includes:
-- an `auth-keygen` one-shot container that creates RSA private key material into a Docker volume if absent;
+Compose includes:
+
+- one-shot `auth-keygen`;
+- RSA private key Docker volume;
 - read-only key mount into `be-auth-api`;
-- public JWKS endpoint used by Keycloak;
-- no `AUTH_KEYCLOAK_CLIENT_SECRET` requirement for the `be-auth-api` service client.
+- public JWKS endpoint for Keycloak;
+- no `AUTH_KEYCLOAK_CLIENT_SECRET` requirement for service client authentication.
 
-## Latest GitHub Actions status
+## GitHub Actions status
 
-Workflow run `31096424782` for `caac53f422013ac129b983168f429ebd1bd1d708` verified:
+Workflow run `31096424782` for implementation head `caac53f422013ac129b983168f429ebd1bd1d708` verified:
+
 - `repository-quality`: success;
 - `backend-format`: success;
 - `backend-test`: success;
 - `compose-validation`: success;
 - `dockerfile-validation`: success.
 
-`runtime-smoke` on the final private-key-JWT head could not provide final E2E evidence because GitHub Actions did not allocate/run the job due to the account billing/spending-limit condition observed during this delivery. This is recorded as an external CI infrastructure blocker, **not** reported as a passing runtime test and **not** hidden as a code success.
+The final `runtime-smoke` was not allocated by GitHub Actions because the account was blocked by a billing/spending-limit condition. This is an external CI infrastructure blocker and is **not** reported as a passing runtime test.
 
-Earlier runtime smoke for the pre-hardening client-secret implementation did pass the PostgreSQL/Redis/Keycloak/auth-API stack and authenticated `/me/*` flow. During private-key-JWT hardening, a real runtime attempt also successfully exposed the Spring constructor issue described above, which was converted into a deterministic RED regression test and fixed. A final signed-JWT token exchange/runtime smoke should be rerun when GitHub Actions runner availability is restored.
+An earlier runtime attempt did execute far enough to expose the Spring constructor issue. That issue was reproduced by a deterministic RED context test and fixed. The full signed-JWT token exchange/runtime smoke must be rerun when Actions runner availability is restored.
 
-## Key security contracts verified
+## Security contracts
 
-- `/api/v1/**`, `/private/**`, and `/internal/**` require authentication; infrastructure health/error/JWKS endpoints have explicit public semantics.
-- SERVICE_ACCOUNT JWTs map to `ActorType.SERVICE`.
+- `/api/v1/**`, `/private/**`, and `/internal/**` require authentication.
+- Health/error/public-JWKS endpoints have explicit public semantics.
+- `SERVICE_ACCOUNT` maps to `ActorType.SERVICE`.
 - Effective permissions derive only from Keycloak effective roles prefixed `permission:`.
-- Scope authorization uses exact/descendant path boundaries rather than unsafe raw-prefix matching.
-- Keycloak Admin REST uses a service access token acquired by Client Credentials.
-- client authentication to the token endpoint uses short-lived signed JWT assertion (`private_key_jwt`) instead of a shared secret.
-- private key material is runtime mounted and must not be committed/logged.
-- Keycloak can discover only the public JWK; the JWKS response contains no private RSA parameter.
-- local `.env` files are ignored from Git.
-- Redis cache has bounded TTL (`PT2M` default), typed values, namespacing and source-of-truth fallback.
-- cache/provider failure never becomes silent authorization success.
-- Kafka/job technical actors are explicit; provenance and credential identity are kept conceptually separate.
+- Scope authorization uses path boundaries, not unsafe raw-prefix checks.
+- Keycloak Admin REST uses a Client Credentials service token.
+- Client authentication uses short-lived `private_key_jwt` instead of a shared secret.
+- Private key material is runtime-mounted and must not be committed or logged.
+- JWKS exposes public key material only.
+- Redis has bounded TTL and fail-closed source-of-truth fallback.
+- Kafka/job technical identity and business provenance remain separate concepts.
 
 ## Security study document
 
-The repository includes the Vietnamese deep-dive reference at:
+The repository contains a real binary OOXML/DOCX artifact at:
 
 ```text
 docs/security/Keycloak_Authentication_Authorization_Deep_Dive_VI.docx
 ```
 
-The repository-optimized DOCX preserves the study content and was validated as a real OOXML ZIP package and rendered for visual QA before commit. Its SHA-256 is recorded after the binary Git object is published.
+Publication evidence:
 
-## Non-goals preserved
+- Git blob SHA: `506e0ce3075f7b09763516cb5ee592cbeae5631c`;
+- binary-fix commit: `a8a2ccd6c14732d539a3ec5a918723df16d20da4`;
+- source artifact SHA-256 before upload: `f14bbc9b4b11a2ce9091eb200c0bcfaa8a7ad878cd9b9f80c153a6784916c4b2`;
+- source artifact size: 7,876 bytes;
+- the Git connector cannot decode the blob as UTF-8, which confirms it is stored as binary rather than base64 text;
+- the source DOCX was opened as an OOXML ZIP and all 18 rendered pages were visually inspected before publication.
 
-No Ledger, Transfer, KYC, wallet-account, business limits, fraud, settlement, or other future-domain implementation was introduced as part of DW-002.
+The reference covers Keycloak, OAuth/OIDC, session/cookie/JWT, `private_key_jwt`, mTLS/workload identity, RBAC/ABAC, Spring Security, Kafka/job/M2M, threats, tests, and implementation checklists.
 
 ## Delivery status
 
-DW-002 remains in review through PR #3 against `develop`. TDD commits are intentionally left unsquashed for the repository owner to squash later. No merge into `master` is part of this delivery.
+DW-002 remains in review through PR #3 against `develop`. The repository owner will squash the branch later. No merge into `master` is part of this delivery.
