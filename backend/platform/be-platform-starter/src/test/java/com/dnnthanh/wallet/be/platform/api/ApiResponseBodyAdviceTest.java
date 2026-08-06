@@ -6,7 +6,7 @@ import java.lang.reflect.Method;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 
 class ApiResponseBodyAdviceTest {
     @Test
@@ -15,8 +15,7 @@ class ApiResponseBodyAdviceTest {
         Method method = RawController.class.getDeclaredMethod("raw");
         MethodParameter returnType = new MethodParameter(method, -1);
 
-        assertThat(advice.supports(returnType, MappingJackson2HttpMessageConverter.class))
-                .isFalse();
+        assertThat(advice.supports(returnType, JacksonJsonHttpMessageConverter.class)).isFalse();
     }
 
     private static final class RawController {
