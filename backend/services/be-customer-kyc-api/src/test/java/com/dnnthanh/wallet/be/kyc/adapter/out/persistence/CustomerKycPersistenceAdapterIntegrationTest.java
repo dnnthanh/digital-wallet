@@ -17,8 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -91,15 +89,19 @@ class CustomerKycPersistenceAdapterIntegrationTest {
     }
 
     @Test
-    void duplicateUserIdIsRejectedByDatabase() {
+    void duplicateUserIdMapsToConcurrentModificationConflict() {
         repository.save(draft("user-1", "fingerprint-1"));
 
         assertThatThrownBy(() -> repository.save(draft("user-1", "fingerprint-2")))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        exception ->
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(KycErrorCode.KYC_CONCURRENT_MODIFICATION));
     }
 
     @Test
-    void staleVersionCannotOverwriteNewerDraft() {
+    void staleVersionMapsToConcurrentModificationConflict() {
         CustomerKyc saved = repository.save(draft("user-1", "fingerprint-1"));
         CustomerKyc first = repository.findById(saved.kycId()).orElseThrow();
         CustomerKyc stale = repository.findById(saved.kycId()).orElseThrow();
@@ -112,7 +114,11 @@ class CustomerKycPersistenceAdapterIntegrationTest {
                                         stale.updateDraft(
                                                 profile("fingerprint-3", "3333"),
                                                 NOW.plusSeconds(20))))
-                .isInstanceOf(OptimisticLockingFailureException.class);
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        exception ->
+                                assertThat(exception.getErrorCode())
+                                        .isEqualTo(KycErrorCode.KYC_CONCURRENT_MODIFICATION));
     }
 
     private java.util.List<String> columnNames() {
