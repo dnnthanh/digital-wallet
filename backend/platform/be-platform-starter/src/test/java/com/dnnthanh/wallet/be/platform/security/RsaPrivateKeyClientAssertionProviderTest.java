@@ -50,9 +50,7 @@ class RsaPrivateKeyClientAssertionProviderTest {
         Instant now = Instant.parse("2026-08-06T10:00:00Z");
         RsaPrivateKeyClientAssertionProvider provider =
                 new RsaPrivateKeyClientAssertionProvider(
-                        properties,
-                        new DefaultResourceLoader(),
-                        Clock.fixed(now, ZoneOffset.UTC));
+                        properties, new DefaultResourceLoader(), Clock.fixed(now, ZoneOffset.UTC));
 
         SignedJWT assertion = SignedJWT.parse(provider.assertion());
 
@@ -60,12 +58,14 @@ class RsaPrivateKeyClientAssertionProviderTest {
         assertThat(assertion.getHeader().getKeyID()).isEqualTo("be-auth-api-key-1");
         assertThat(assertion.getJWTClaimsSet().getIssuer()).isEqualTo("be-auth-api");
         assertThat(assertion.getJWTClaimsSet().getSubject()).isEqualTo("be-auth-api");
-        assertThat(assertion.getJWTClaimsSet().getAudience()).containsExactly("http://keycloak/token");
+        assertThat(assertion.getJWTClaimsSet().getAudience())
+                .containsExactly("http://keycloak/token");
         assertThat(assertion.getJWTClaimsSet().getIssueTime().toInstant()).isEqualTo(now);
         assertThat(assertion.getJWTClaimsSet().getExpirationTime().toInstant())
                 .isEqualTo(now.plusSeconds(30));
         assertThat(assertion.getJWTClaimsSet().getJWTID()).isNotBlank();
-        assertThat(assertion.verify(new RSASSAVerifier((RSAPublicKey) keyPair.getPublic()))).isTrue();
+        assertThat(assertion.verify(new RSASSAVerifier((RSAPublicKey) keyPair.getPublic())))
+                .isTrue();
 
         Map<String, Object> jwkSet = provider.jwkSet();
         assertThat(jwkSet).containsKey("keys");

@@ -15,7 +15,8 @@ class ApiResponseBodyAdviceTest {
         Method method = RawController.class.getDeclaredMethod("raw");
         MethodParameter returnType = new MethodParameter(method, -1);
 
-        assertThat(advice.supports(returnType, MappingJackson2HttpMessageConverter.class)).isFalse();
+        assertThat(advice.supports(returnType, MappingJackson2HttpMessageConverter.class))
+                .isFalse();
     }
 
     private static final class RawController {

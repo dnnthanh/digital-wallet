@@ -132,10 +132,7 @@ public class RsaPrivateKeyClientAssertionProvider
                                             new RSAPublicKeySpec(
                                                     privateKey.getModulus(),
                                                     privateKey.getPublicExponent()));
-            return new RSAKey.Builder(publicKey)
-                    .keyID(keyId)
-                    .algorithm(JWSAlgorithm.RS256)
-                    .build();
+            return new RSAKey.Builder(publicKey).keyID(keyId).algorithm(JWSAlgorithm.RS256).build();
         } catch (GeneralSecurityException failure) {
             throw new IllegalStateException(CLIENT_PUBLIC_KEY_DERIVATION_FAILED, failure);
         }
