@@ -33,6 +33,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -51,6 +52,7 @@ public class RsaPrivateKeyClientAssertionProvider
     private final RSAPrivateCrtKey privateKey;
     private final RSAKey publicJwk;
 
+    @Autowired
     public RsaPrivateKeyClientAssertionProvider(
             InternalSecurityProperties properties, ResourceLoader resourceLoader) {
         this(properties, resourceLoader, Clock.systemUTC());
