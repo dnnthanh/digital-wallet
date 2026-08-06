@@ -1,132 +1,178 @@
 # DW-002: Keycloak Authentication & Authorization Specification
 
 ## Status
-APPROVED FOR IMPLEMENTATION — derived from accepted ADR-002, AGENTS.MD, DW-001 platform contracts, and the explicit DW-002 delivery request.
+IMPLEMENTED / IN REVIEW — finalized for the current `feature/platform-foundation` delivery against `develop`.
 
 ## Goal
 Provide production-oriented authentication and authorization foundations centered on Keycloak without introducing a competing IAM database or implementing Ledger/Transfer/KYC business behavior.
 
 ## Scope
 DW-002 owns:
-- Keycloak realm/client/role/group configuration for local development and automated contract verification;
-- compact authenticated identity extraction into the platform `UserContext`;
+- Keycloak realm/client/role/group configuration for local development and contract verification;
+- Spring Security Resource Server authentication and compact JWT identity extraction into platform `UserContext`;
 - effective permission resolution from Keycloak composite realm roles;
 - hierarchical authorization scope resolution from Keycloak group paths;
-- bounded-TTL Redis caching for resolved authorization metadata with fail-open-to-Keycloak behavior;
-- reusable backend permission/scope enforcement primitives suitable for `@PreAuthorize`;
-- self-service REST APIs:
-  - `GET /api/v1/me/profile`
-  - `GET /api/v1/me/permissions`
-  - `GET /api/v1/me/scopes`;
-- service-to-service client-credentials support already established by DW-001, with DW-002 wiring/configuration proving its use against Keycloak;
-- audit actor classification continuity for USER, SERVICE, SCHEDULER and KAFKA_CONSUMER identities.
+- bounded-TTL Redis caching for resolved authorization metadata with fail-closed authorization semantics;
+- reusable permission/scope primitives suitable for `@PreAuthorize`;
+- self-service REST APIs `GET /api/v1/me/profile`, `/permissions`, and `/scopes`;
+- service-to-Keycloak machine authentication using OAuth 2.0 Client Credentials with RFC 7523 `private_key_jwt` client authentication;
+- explicit technical execution contexts for `SERVICE`, `SCHEDULER`, and `KAFKA_CONSUMER` actors.
 
-DW-002 does not own:
-- Ledger, Transfer, KYC, wallet-account, fraud, limit or settlement business rules;
-- business-domain persistence tables;
-- a custom user/credential/role database;
-- authorization decisions performed only by frontend code;
-- large permission/scope payloads embedded into JWTs.
+DW-002 does not own Ledger, Transfer, KYC, wallet-account, fraud, limits, settlement, a custom IAM database, frontend-only authorization, or future business-domain policies.
 
 ## Architecture
 ### Platform layer
-`be-platform-starter` remains the reusable security boundary. It owns compact principal extraction, common authorization value types, and a method-security bean that can evaluate permission/scope data exposed through ports without leaking Spring Security into future application/domain code.
+`be-platform-starter` owns reusable security mechanics: resource-server configuration, request `UserContext`, technical actor factories, method-security primitives, signed client assertions, service-token acquisition, common API errors, and correlation/observability integration.
+
+The M2M token provider is not servlet/request scoped so Kafka workers and scheduled jobs can use it when they call a protected downstream service.
 
 ### Auth bounded context
-Add runnable `backend/services/be-auth-api` using the repository Hexagonal layout:
+`backend/services/be-auth-api` follows the repository Hexagonal layout:
 
 ```text
 adapter/in/web -> application/port/in -> application/service -> application/port/out -> adapter/out/external/keycloak/rest
 ```
 
-The service exposes only current-principal self-service metadata. It owns no IAM database.
+It exposes current-principal metadata and owns no IAM persistence tables.
 
-### Keycloak
-Keycloak remains source of truth for authentication and authorization metadata:
+### Keycloak source of truth
+Keycloak remains the authentication/authorization authority:
 - composite realm roles represent `role -> permissions`;
-- permission roles use the prefix `permission:` and are not assigned directly by wallet business code;
-- Keycloak groups represent hierarchical authorization scope; APIs expose stable group `path` values rather than internal database state;
-- the backend obtains an administrative service token through client credentials and calls Keycloak Admin REST APIs;
-- client secrets are environment-backed placeholders in realm import/configuration, never committed literal secrets.
+- permission roles use the `permission:` prefix;
+- group paths represent hierarchical authorization scope;
+- the existing single client `be-auth-api` remains the service-account client; DW-002 does not introduce a separate admin client;
+- Keycloak Admin REST is called with a service-account access token obtained through Client Credentials.
 
-### Cache
-Redis role: `CACHE` only. Effective authorization is cached by user id with a bounded TTL. Cache failure must not grant access and must not become an authority; the service resolves from Keycloak when cache is absent/unavailable. Invalidation is exposed as an explicit application operation for future admin/event integration.
+## Client authentication: `private_key_jwt`
+`be-auth-api` no longer authenticates the token request with a shared `client_secret`.
+
+The client uses RFC 7523 signed JWT client authentication:
+- Keycloak client authenticator: `client-jwt`;
+- signing algorithm: RS256;
+- client assertion `iss` = `sub` = `be-auth-api`;
+- assertion `aud` is the configured Keycloak token endpoint;
+- assertion has short `exp`, `iat`, unique `jti`, and configured `kid`;
+- token request contains `grant_type=client_credentials`, `client_id`, `client_assertion_type`, and `client_assertion`;
+- no `client_secret` is sent or stored for this service authentication path.
+
+### Key ownership and JWKS
+The private RSA key belongs to the service runtime and must never be committed to Git.
+
+Local Compose generates the private key into a Docker volume and mounts it read-only into `be-auth-api`. The service publishes only the derived public JWK at:
+
+```text
+GET /.well-known/wallet-client-jwks.json
+```
+
+This endpoint is intentionally unauthenticated because Keycloak must fetch the public key before it can authenticate the client. It must never expose RSA private parameters such as `d`.
+
+Keycloak realm configuration uses:
+- `clientAuthenticatorType=client-jwt`;
+- `use.jwks.url=true`;
+- `jwks.url=http://be-auth-api:8080/.well-known/wallet-client-jwks.json`;
+- service account enabled;
+- no literal client secret.
+
+Production key material must come from an appropriate secret/key-management mechanism; the repository only defines runtime location, key id, assertion TTL, and public-key discovery contracts.
+
+## HTTP, Kafka, jobs and technical identity
+### HTTP request
+For a normal authenticated request, Spring Security validates the bearer JWT and builds request `UserContext`. A service-account JWT with `SERVICE_ACCOUNT` maps to `ActorType.SERVICE`.
+
+### Kafka consumer
+Kafka execution has no servlet request and therefore must not depend on request-scoped `SecurityContext`/`UserContext`.
+
+A consumer creates an explicit technical context:
+
+```text
+ActorType = KAFKA_CONSUMER
+userId/username = service name
+role = SERVICE_ACCOUNT
+```
+
+This local context does not require minting a JWT. If the consumer later calls another protected service, it obtains an M2M access token through `ServiceTokenProvider`.
+
+### Scheduled job
+A scheduled job follows the same rule with `ActorType.SCHEDULER`: local technical execution context first; M2M credential only at an outbound protected service boundary.
+
+### Business initiator vs technical executor
+Business provenance and technical authentication are independent concerns. An event may carry `initiatedByUserId`/`username` or equivalent metadata for audit/history while the background consumer authenticates downstream as its service account. A background worker must not manufacture or impersonate an end-user token merely because a username exists in event metadata. On-behalf-of/delegation requires an explicit future security requirement.
 
 ## Public contracts
-All endpoints are authenticated and live under `/api/v1`.
+All `/api/v1/**` endpoints require authentication.
 
 ### GET `/api/v1/me/profile`
-Returns stable identity data derived from the JWT/request context:
-- `userId`
-- `username`
-- `actorType`
-- compact `roles`
-
-No token, credential or Keycloak secret is returned.
+Returns stable identity data derived from JWT/request context: `userId`, `username`, `actorType`, and compact roles. No token, private key, credential, or Keycloak secret is returned.
 
 ### GET `/api/v1/me/permissions`
-Returns effective permission codes resolved from Keycloak composite realm roles. Only role names beginning with `permission:` are exposed, with the prefix removed in the API response. Results are distinct and sorted.
+Returns effective permission codes resolved from Keycloak composite realm roles. Only effective role names beginning with `permission:` are exposed, with the prefix removed. Results are distinct and sorted.
 
 ### GET `/api/v1/me/scopes`
-Returns hierarchical Keycloak group paths assigned to the current user. Results are distinct and sorted.
+Returns distinct, sorted Keycloak group paths assigned to the current user.
 
 ## Authorization primitives
-The platform must provide a bean addressable from method security expressions:
-- `@walletAuthorization.hasPermission('code')`
-- `@walletAuthorization.hasScope('/scope/path')`
-- `@walletAuthorization.hasPermissionInScope('code', '/scope/path')`
+The platform exposes `walletAuthorization` for method security:
+- `hasPermission(code)`;
+- `hasScope(path)`;
+- `hasPermissionInScope(code, path)`.
 
 Rules:
-- missing authentication -> false;
-- missing permission/scope -> false;
-- scope match is exact path or descendant path separated by `/`; string-prefix collisions such as `/bank/a` vs `/bank/abc` must not authorize;
-- service actors do not bypass permissions/scopes unless a future feature explicitly specifies such a policy.
+- missing authentication/permission/scope denies;
+- scope match is exact or descendant-by-`/` boundary;
+- raw string-prefix collisions such as `/bank/a` vs `/bank/abc` do not authorize;
+- service/system actors do not implicitly bypass business permissions.
 
 ## Keycloak Admin REST adapter
-For current `userId`, resolve:
-- effective realm roles from `GET /admin/realms/{realm}/users/{user-id}/role-mappings/realm/composite`;
-- groups from `GET /admin/realms/{realm}/users/{user-id}/groups`.
+For the current user id, resolve:
+- effective realm roles from `/admin/realms/{realm}/users/{user-id}/role-mappings/realm/composite`;
+- groups from `/admin/realms/{realm}/users/{user-id}/groups`.
 
-The adapter uses the DW-001 `ServiceTokenProvider`; base URL, realm, client id/secret, token URI and timeouts are configuration/environment-backed.
+The adapter uses Spring-managed `RestClient.Builder` and the shared `ServiceTokenProvider`. Client authentication details remain inside the platform security adapter rather than application/domain code.
 
-Keycloak 26 supports environment-variable placeholders in realm import files, so local client secrets remain placeholders supplied by Compose/runtime.
+## Cache and failure semantics
+Redis is a cache, never an authorization authority. The default authorization snapshot TTL is bounded (`PT2M`).
 
-## Failure semantics
-- invalid/missing bearer token -> platform authentication response (401);
+- invalid/missing bearer token -> 401;
 - authenticated principal without required permission/scope -> 403;
-- Keycloak authorization metadata unavailable and no usable cached value -> stable internal dependency failure (5xx), never silent authorization success;
-- Redis unavailable -> log/cache miss semantics, then resolve from Keycloak;
-- malformed Keycloak response -> typed infrastructure failure, no raw provider body/secret exposed;
-- token/client secret values must never be logged.
-
-## Observability and correlation
-Reuse DW-001 platform tracing/correlation. The auth service must:
-- define `spring.application.name=be-auth-api`;
-- use Spring-managed `RestClient.Builder` so W3C tracing propagates automatically;
-- never manually write `traceparent`/`tracestate`;
-- log authorization/provider failures without JWTs, passwords, tokens or secrets.
+- Redis unavailable -> treat as cache miss and resolve from Keycloak;
+- Keycloak unavailable and no usable cached value -> dependency failure, never authorization success;
+- malformed provider response -> typed infrastructure failure;
+- JWTs, access tokens, private keys, passwords and assertions must not be logged.
 
 ## Docker / Compose
-- Add `be-auth-api` to the backend Maven reactor and generic `backend/Dockerfile.service` pattern.
-- Add `compose/backend/auth.yml` and aggregate it from `compose/backend/all.yml`.
-- Keycloak client secret is required via environment variable; `.env.example` contains blank secret placeholders only.
-- Existing PostgreSQL, Redis, Kafka, Keycloak, gRPC and observability foundations from DW-001 remain the single platform implementation; DW-002 must not duplicate them.
+- `be-auth-api` uses the generic service Dockerfile.
+- `auth-keygen` creates an ephemeral/local RSA private key in the `auth-client-key` volume when absent.
+- `be-auth-api` mounts that volume read-only.
+- Keycloak receives only the public JWKS URL; it does not receive the private key.
+- `.env.example` contains configuration identifiers/TTLs but no `AUTH_KEYCLOAK_CLIENT_SECRET`.
+- private keys and local `.env` files must remain outside Git.
 
-## Required tests / TDD evidence
-1. `UserContext` maps JWT identity and compact role claims, and classifies configured service-account roles as SERVICE.
-2. Permission mapper accepts only `permission:` effective role names, strips prefix, deduplicates and sorts.
-3. Scope mapper deduplicates and sorts Keycloak group paths.
-4. Authorization policy denies missing values and handles exact/descendant scope boundaries correctly.
-5. Self-service controller requires authentication and returns the platform response contract.
-6. Keycloak adapter sends service bearer token and maps composite roles/groups from provider responses.
-7. Redis authorization cache is typed, bounded TTL, namespaced by `spring.application.name`, and cache failure falls through to provider resolution.
-8. Realm contract test proves client secret placeholder, service account/client, composite role, permission role and hierarchical group fixtures exist without committed secret literals.
-9. Maven reactor, Spotless, repository verification, Dockerfile checks and root/split Compose validation pass.
+## Required tests / TDD contracts
+1. JWT request identity and service actor classification.
+2. Permission and scope mapping/authorization boundaries.
+3. Self-service controller authentication/API contracts.
+4. Keycloak Admin adapter bearer-token behavior.
+5. Typed bounded-TTL Redis authorization cache and provider fallback.
+6. `ServiceTokenProvider` sends `client_assertion` and never `client_secret`.
+7. RS256 assertion verifies with the paired public key and contains required RFC 7523 claims.
+8. Public JWKS contains the configured `kid` and no private RSA parameter.
+9. Realm contract requires `client-jwt`, JWKS URL and service account without a client secret.
+10. `SystemUserContextFactory` creates SERVICE/SCHEDULER/KAFKA_CONSUMER technical actors.
+11. Kafka consumer can establish local technical context without an HTTP SecurityContext.
+12. Internal-security Spring auto-configuration creates the signed-JWT/token-provider beans in a real application context.
+13. Maven verify, Spotless, repository verification, Dockerfile and Compose checks pass.
+
+## Documentation
+The security study/reference document is versioned at:
+
+```text
+docs/security/Keycloak_Authentication_Authorization_Deep_Dive_VI.docx
+```
+
+It covers Keycloak, OAuth/OIDC, cookie/session/JWT, `private_key_jwt`, mTLS, RBAC/ABAC, Spring Security, Kafka/job/M2M, threat modeling and implementation checklists.
 
 ## Definition of done
-- Spec and implementation plan are committed before production code.
-- RED tests are committed and observed failing for the missing DW-002 implementation.
-- Minimal implementation makes those tests green without Ledger/Transfer/KYC code.
-- Verification evidence is stored in `.agent/reports/DW-002-auth-keycloak-verification.md`.
-- Branch targets `develop`; GitHub Actions are green.
-- No merge into `master`.
+- Implementation and TDD evidence are recorded in `.agent/reports/DW-002-auth-keycloak-verification.md`.
+- No Ledger/Transfer/KYC/future-domain implementation is introduced.
+- All CI gates that can execute are green; any externally blocked gate is documented rather than reported as passed.
+- PR targets `develop`; no merge into `master` is part of DW-002.
