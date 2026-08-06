@@ -90,11 +90,14 @@ class KycControllerTest {
         assertPermission("submitMyKyc", "kyc:self:submit");
         assertPermission("getReview", "kyc:review", UUID.class);
         assertPermission(
-                "review", "kyc:review", UUID.class, com.dnnthanh.wallet.be.kyc.api.request.KycReviewDecisionRequest.class);
+                "review",
+                "kyc:review",
+                UUID.class,
+                com.dnnthanh.wallet.be.kyc.api.request.KycReviewDecisionRequest.class);
     }
 
-    private static void assertPermission(String methodName, String permission, Class<?>... parameterTypes)
-            throws Exception {
+    private static void assertPermission(
+            String methodName, String permission, Class<?>... parameterTypes) throws Exception {
         Method method = KycController.class.getMethod(methodName, parameterTypes);
         PreAuthorize preAuthorize = method.getAnnotation(PreAuthorize.class);
 

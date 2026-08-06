@@ -25,7 +25,8 @@ class RequestKycAuthorizationTest {
     @Test
     void missingScopeFailsClosed() {
         RequestKycAuthorization authorization =
-                new RequestKycAuthorization(new CurrentAuthorization(Set.of("kyc:self:write"), Set.of()));
+                new RequestKycAuthorization(
+                        new CurrentAuthorization(Set.of("kyc:self:write"), Set.of()));
 
         assertThatThrownBy(authorization::requireCustomerScope)
                 .isInstanceOfSatisfying(

@@ -58,7 +58,8 @@ class AuthApiCurrentAuthorizationAdapterTest {
 
         CurrentAuthorization authorization = adapter.currentAuthorization();
 
-        assertThat(authorization.permissions()).containsExactlyInAnyOrder("kyc:review", "kyc:self:read");
+        assertThat(authorization.permissions())
+                .containsExactlyInAnyOrder("kyc:review", "kyc:self:read");
         assertThat(authorization.scopes()).containsExactlyInAnyOrder("/bank", "/bank/demo-branch");
         server.verify();
     }

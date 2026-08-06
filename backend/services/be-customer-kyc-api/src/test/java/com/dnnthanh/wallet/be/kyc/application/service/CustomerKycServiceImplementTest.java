@@ -71,7 +71,8 @@ class CustomerKycServiceImplementTest {
         when(fingerprintPort.fingerprint("123456789012"))
                 .thenReturn(new DocumentFingerprint("fingerprint-1", "9012"));
         when(repository.findByUserId(USER_ID)).thenReturn(Optional.empty());
-        when(repository.save(any(CustomerKyc.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(CustomerKyc.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         KycView result = service.upsertMyDraft(command("123456789012"));
 
@@ -90,7 +91,8 @@ class CustomerKycServiceImplementTest {
         CustomerKyc draft = draft(USER_ID, SCOPE);
         when(currentActorPort.userId()).thenReturn(USER_ID);
         when(repository.findByUserId(USER_ID)).thenReturn(Optional.of(draft));
-        when(repository.save(any(CustomerKyc.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(CustomerKyc.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         KycView result = service.submitMyKyc();
 
@@ -126,11 +128,13 @@ class CustomerKycServiceImplementTest {
         when(currentActorPort.userId()).thenReturn(REVIEWER_ID);
         when(repository.findById(pending.kycId())).thenReturn(Optional.of(pending));
         when(authorizationPort.hasScope(SCOPE)).thenReturn(true);
-        when(repository.save(any(CustomerKyc.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(CustomerKyc.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         KycView result =
                 service.review(
-                        pending.kycId(), new KycReviewCommand(KycReviewDecision.REJECT, "DOC_UNCLEAR"));
+                        pending.kycId(),
+                        new KycReviewCommand(KycReviewDecision.REJECT, "DOC_UNCLEAR"));
 
         ArgumentCaptor<KycStatusChangedPayload> event =
                 ArgumentCaptor.forClass(KycStatusChangedPayload.class);
