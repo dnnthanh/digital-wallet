@@ -19,12 +19,45 @@
         "composite" : false
       },
       {
+        "name" : "permission:kyc:self:read",
+        "description" : "Read the authenticated principal KYC profile",
+        "composite" : false
+      },
+      {
+        "name" : "permission:kyc:self:write",
+        "description" : "Create or update the authenticated principal KYC draft",
+        "composite" : false
+      },
+      {
+        "name" : "permission:kyc:self:submit",
+        "description" : "Submit the authenticated principal KYC profile for review",
+        "composite" : false
+      },
+      {
+        "name" : "permission:kyc:review",
+        "description" : "Review KYC profiles within authorized group scopes",
+        "composite" : false
+      },
+      {
         "name" : "role:wallet-user",
         "description" : "Base wallet user role",
         "composite" : true,
         "composites" : {
           "realm" : [
-            "permission:self:read"
+            "permission:self:read",
+            "permission:kyc:self:read",
+            "permission:kyc:self:write",
+            "permission:kyc:self:submit"
+          ]
+        }
+      },
+      {
+        "name" : "role:kyc-reviewer",
+        "description" : "KYC reviewer role",
+        "composite" : true,
+        "composites" : {
+          "realm" : [
+            "permission:kyc:review"
           ]
         }
       }
