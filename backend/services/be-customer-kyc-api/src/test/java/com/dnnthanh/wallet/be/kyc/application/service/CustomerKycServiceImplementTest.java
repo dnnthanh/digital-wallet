@@ -17,6 +17,7 @@ import com.dnnthanh.wallet.be.kyc.application.port.out.CustomerKycRepositoryPort
 import com.dnnthanh.wallet.be.kyc.application.port.out.DocumentFingerprintPort;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycAuthorizationPort;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycOutboxPort;
+import com.dnnthanh.wallet.be.kyc.application.port.out.KycReviewAuditPort;
 import com.dnnthanh.wallet.be.kyc.domain.CustomerKyc;
 import com.dnnthanh.wallet.be.kyc.domain.KycDocumentType;
 import com.dnnthanh.wallet.be.kyc.domain.KycProfile;
@@ -47,6 +48,7 @@ class CustomerKycServiceImplementTest {
     @Mock private CustomerKycRepositoryPort repository;
     @Mock private DocumentFingerprintPort fingerprintPort;
     @Mock private KycOutboxPort outboxPort;
+    @Mock private KycReviewAuditPort reviewAuditPort;
     @Mock private CurrentActorPort currentActorPort;
     @Mock private KycAuthorizationPort authorizationPort;
 
@@ -59,6 +61,7 @@ class CustomerKycServiceImplementTest {
                         repository,
                         fingerprintPort,
                         outboxPort,
+                        reviewAuditPort,
                         currentActorPort,
                         authorizationPort,
                         Clock.fixed(NOW, ZoneOffset.UTC));
