@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, master]
+  push:
+    branches: [master, develop, 'feature/**', 'fix/**', 'chore/**']
+
+permissions:
+  contents: read
+
+jobs:
+  repository-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Verify repository context/spec baseline
+        run: python3 verification/verify_repository.py
+
+  backend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Test backend
+        run: ./mvnw -B -ntp -f backend/pom.xml verify
+
+  compose-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate root and split compose files
+        env:
+          POSTGRES_PASSWORD: ci-only-placeholder
+          KEYCLOAK_DB_PASSWORD: ci-only-placeholder
+          KEYCLOAK_ADMIN_PASSWORD: ci-only-placeholder
+        run: |
+          docker compose -f docker-compose.yml config >/dev/null
+          docker compose --project-directory . -f compose/infrastructure.yml -f compose/backend/all.yml config >/dev/null
+
+  dockerfile-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate backend Dockerfiles
+        run: |
+          docker buildx build --check -f backend/Dockerfile.runtime backend
+          docker buildx build --check --build-arg MODULE=be-placeholder -f backend/Dockerfile.service backend
+          docker buildx build --check -f Dockerfile.backend .

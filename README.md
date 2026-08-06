@@ -2,7 +2,20 @@
 
 Production-oriented learning project for a digital wallet/banking platform.
 
-> **Important:** the E-commerce project is a reference for engineering conventions only. This repository owns the Digital Wallet domain and must not import marketplace concepts unless a wallet use case explicitly requires them.
+> **Important:** the E-commerce project is a reference for engineering conventions and repository structure only. This repository owns the Digital Wallet domain and must not import marketplace concepts unless a wallet use case explicitly requires them.
+
+## Structural baseline
+
+Digital Wallet intentionally stays in the same engineering family as the E-commerce reference project:
+
+- shared backend starters under `backend/platform/`;
+- runnable bounded-context deployables under `backend/services/be-*`;
+- Java 25 / Spring Boot 4.1 Maven parent and common quality tooling;
+- generic backend `Dockerfile.service` / `Dockerfile.runtime` patterns;
+- root and split Docker Compose topology under `compose/`;
+- Hexagonal/DDD package boundaries, Testcontainers and GitHub Actions quality gates.
+
+Banking-specific ADRs may extend the reference structure. In particular, Digital Wallet adds gRPC as a first-class option for selected internal synchronous core-money calls.
 
 ## Core capabilities
 

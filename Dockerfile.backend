@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1.7
+FROM maven:3.9.11-eclipse-temurin-25 AS build
+WORKDIR /workspace
+COPY backend ./backend
+RUN --mount=type=cache,id=digital-wallet-maven-repository,target=/root/.m2,sharing=shared \
+    mvn -B -ntp -f backend/pom.xml -DskipTests package \
+ && mkdir -p /artifacts \
+ && if [ -d backend/services ]; then find backend/services -type f -path '*/target/*.jar' ! -name '*.original' -exec sh -c 'module=$(basename "$(dirname "$(dirname "$1")")"); mkdir -p "/artifacts/$module"; cp "$1" "/artifacts/$module/app.jar"' _ {} \;; fi
+
+FROM eclipse-temurin:25-jre
+WORKDIR /opt/digital-wallet
+RUN useradd --system --uid 10001 wallet
+COPY --from=build /artifacts /opt/digital-wallet/services
+COPY backend/docker/runtime-entrypoint.sh /opt/digital-wallet/runtime-entrypoint.sh
+RUN chmod +x /opt/digital-wallet/runtime-entrypoint.sh && chown -R wallet:wallet /opt/digital-wallet
+USER wallet
+EXPOSE 8080
+ENTRYPOINT ["/opt/digital-wallet/runtime-entrypoint.sh"]

@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: be-platform-starter-test
+  config:
+    import: classpath:platform-kafka.yml

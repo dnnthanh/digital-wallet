@@ -1,0 +1,29 @@
+# syntax=docker/dockerfile:1.7
+FROM maven:3.9.11-eclipse-temurin-25 AS build
+WORKDIR /workspace/backend
+ENV MAVEN_OPTS="-Xms256m -Xmx2048m -XX:MaxMetaspaceSize=512m"
+COPY . .
+RUN --mount=type=cache,id=digital-wallet-maven-repository,target=/root/.m2,sharing=shared \
+    mvn -B -ntp -f pom.xml -Dmaven.test.skip=true package \
+ && mkdir -p /workspace/runtime-services \
+ && for module_dir in services/be-*; do \
+      [ -d "$module_dir" ] || continue; \
+      module="$(basename "$module_dir")"; \
+      jar="$(find "$module_dir/target" -maxdepth 1 -type f -name '*.jar' ! -name '*.original' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -n 1)"; \
+      if [ -z "$jar" ]; then echo "Missing executable JAR for $module" >&2; exit 1; fi; \
+      mkdir -p "/workspace/runtime-services/$module"; \
+      cp "$jar" "/workspace/runtime-services/$module/app.jar"; \
+    done
+
+FROM eclipse-temurin:25-jre
+WORKDIR /opt/digital-wallet
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --system --uid 10001 wallet
+COPY --from=build /workspace/runtime-services /opt/digital-wallet/services
+COPY docker/runtime-entrypoint.sh /opt/digital-wallet/runtime-entrypoint.sh
+RUN chmod +x /opt/digital-wallet/runtime-entrypoint.sh && chown -R wallet:wallet /opt/digital-wallet
+USER wallet
+EXPOSE 8080
+ENTRYPOINT ["/opt/digital-wallet/runtime-entrypoint.sh"]

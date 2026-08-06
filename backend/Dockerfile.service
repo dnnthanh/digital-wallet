@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1.7
+FROM maven:3.9.11-eclipse-temurin-25 AS build
+ARG MODULE
+WORKDIR /workspace/backend
+COPY . .
+RUN --mount=type=cache,id=digital-wallet-maven-repository,target=/root/.m2,sharing=shared \
+    test -n "$MODULE" \
+ && mvn -B -ntp -f pom.xml \
+      -Daether.connector.http.retryHandler.count=8 \
+      -Daether.connector.http.retryHandler.interval=2000 \
+      -Daether.connector.http.retryHandler.intervalMax=30000 \
+      -pl "services/${MODULE}" -am -DskipTests package \
+ && JAR="$(find "services/${MODULE}/target" -maxdepth 1 -type f -name '*.jar' ! -name '*.original' | head -n 1)" \
+ && test -n "$JAR" \
+ && cp "$JAR" /workspace/app.jar
+
+FROM eclipse-temurin:25-jre
+WORKDIR /app
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --system --uid 10001 wallet
+COPY --from=build /workspace/app.jar /app/app.jar
+COPY docker/service-entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh && chown -R wallet:wallet /app
+USER wallet
+EXPOSE 8080
+ENTRYPOINT ["/app/entrypoint.sh"]
