@@ -5,15 +5,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.dnnthanh.wallet.be.platform.security.ClientJwkProvider;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class ClientJwksControllerTest {
     @Test
-    void shouldExposeRawPublicJwksDocument() throws Exception {
+    void shouldExposeRawPublicJwksDocument() {
         ClientJwkProvider provider = mock(ClientJwkProvider.class);
         when(provider.jwkSet())
                 .thenReturn(
@@ -25,14 +23,14 @@ class ClientJwksControllerTest {
                                                 "kid", "be-auth-api-key-1",
                                                 "n", "public-modulus",
                                                 "e", "AQAB"))));
-        ObjectMapper objectMapper = new ObjectMapper();
-        ClientJwksController controller = new ClientJwksController(provider, objectMapper);
+        ClientJwksController controller = new ClientJwksController(provider);
 
-        String response = controller.jwks();
-        JsonNode json = objectMapper.readTree(response);
+        Map<String, Object> response = controller.jwks();
 
-        assertThat(json.path("keys").get(0).path("kid").asText())
-                .isEqualTo("be-auth-api-key-1");
-        assertThat(json.toString()).doesNotContain("\"d\"");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> keys = (List<Map<String, Object>>) response.get("keys");
+        assertThat(keys).hasSize(1);
+        assertThat(keys.getFirst()).containsEntry("kid", "be-auth-api-key-1");
+        assertThat(keys.getFirst()).doesNotContainKey("d");
     }
 }

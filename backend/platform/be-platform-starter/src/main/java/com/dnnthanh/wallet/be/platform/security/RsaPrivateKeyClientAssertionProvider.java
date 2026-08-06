@@ -1,5 +1,9 @@
 package com.dnnthanh.wallet.be.platform.security;
 
+import static com.dnnthanh.wallet.be.platform.constant.PlatformInvariantMessages.CLIENT_ASSERTION_SIGN_FAILED;
+import static com.dnnthanh.wallet.be.platform.constant.PlatformInvariantMessages.CLIENT_PRIVATE_KEY_LOAD_FAILED;
+import static com.dnnthanh.wallet.be.platform.constant.PlatformInvariantMessages.CLIENT_PRIVATE_KEY_NOT_RSA;
+import static com.dnnthanh.wallet.be.platform.constant.PlatformInvariantMessages.CLIENT_PUBLIC_KEY_DERIVATION_FAILED;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.dnnthanh.wallet.be.platform.config.InternalSecurityProperties;
@@ -27,6 +31,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.Resource;
@@ -64,7 +69,7 @@ public class RsaPrivateKeyClientAssertionProvider
     public String assertion() {
         Instant issuedAt = clock.instant();
         Duration ttl =
-                properties.getAssertionTtl() == null
+                Objects.isNull(properties.getAssertionTtl())
                         ? DEFAULT_ASSERTION_TTL
                         : properties.getAssertionTtl();
         String audience =
@@ -91,7 +96,7 @@ public class RsaPrivateKeyClientAssertionProvider
             jwt.sign(new RSASSASigner(privateKey));
             return jwt.serialize();
         } catch (JOSEException failure) {
-            throw new IllegalStateException("Unable to sign Keycloak client assertion", failure);
+            throw new IllegalStateException(CLIENT_ASSERTION_SIGN_FAILED, failure);
         }
     }
 
@@ -112,10 +117,9 @@ public class RsaPrivateKeyClientAssertionProvider
                             .generatePrivate(
                                     new PKCS8EncodedKeySpec(Base64.getDecoder().decode(encoded)));
             if (parsed instanceof RSAPrivateCrtKey rsaPrivateKey) return rsaPrivateKey;
-            throw new IllegalStateException(
-                    "Configured client private key is not RSA CRT key material");
+            throw new IllegalStateException(CLIENT_PRIVATE_KEY_NOT_RSA);
         } catch (IOException | GeneralSecurityException | IllegalArgumentException failure) {
-            throw new IllegalStateException("Unable to load Keycloak client private key", failure);
+            throw new IllegalStateException(CLIENT_PRIVATE_KEY_LOAD_FAILED, failure);
         }
     }
 
@@ -133,7 +137,7 @@ public class RsaPrivateKeyClientAssertionProvider
                     .algorithm(JWSAlgorithm.RS256)
                     .build();
         } catch (GeneralSecurityException failure) {
-            throw new IllegalStateException("Unable to derive Keycloak client public key", failure);
+            throw new IllegalStateException(CLIENT_PUBLIC_KEY_DERIVATION_FAILED, failure);
         }
     }
 }
