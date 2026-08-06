@@ -23,7 +23,8 @@ Verified architecture:
 - Feature branch: `feature/platform-foundation`.
 - Private-key-JWT implementation head before final documentation: `caac53f422013ac129b983168f429ebd1bd1d708`.
 - Binary DOCX fix commit: `a8a2ccd6c14732d539a3ec5a918723df16d20da4`.
-- Final spec commit: `4fcc4b418dcdd9556a829effdc3cbb7d2705ffd4`.
+- Final specification content SHA: `a0719702d3cc686ce9eb133a822a8f4ea2c541e3`.
+- Final verification report content SHA: `ecbc15523cecfdca4c350ab28c131db2c0fa6e5a`.
 - TDD/intermediate commits intentionally remain unsquashed because the repository owner will perform the final squash.
 - No merge into `develop` or `master` is part of this verification.
 
@@ -210,7 +211,7 @@ Publication evidence:
 - binary-fix commit: `a8a2ccd6c14732d539a3ec5a918723df16d20da4`;
 - source artifact SHA-256 before upload: `f14bbc9b4b11a2ce9091eb200c0bcfaa8a7ad878cd9b9f80c153a6784916c4b2`;
 - source artifact size: 7,876 bytes;
-- the Git connector cannot decode the blob as UTF-8, which confirms it is stored as binary rather than base64 text;
+- the Git connector cannot decode the blob as UTF-8, confirming that it is stored as binary rather than base64 text;
 - the source DOCX was opened as an OOXML ZIP and all 18 rendered pages were visually inspected before publication.
 
 The reference covers Keycloak, OAuth/OIDC, session/cookie/JWT, `private_key_jwt`, mTLS/workload identity, RBAC/ABAC, Spring Security, Kafka/job/M2M, threats, tests, and implementation checklists.
