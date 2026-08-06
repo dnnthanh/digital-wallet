@@ -1,0 +1,12 @@
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+
+# Maven / Java build output
+**/target/
+
+# IDE / OS files
+.idea/
+.vscode/
+.DS_Store

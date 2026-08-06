@@ -1,0 +1,40 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: be-auth-api
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/digital-wallet}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/digital-wallet/protocol/openid-connect/certs}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+wallet:
+  auth:
+    cache-ttl: ${AUTH_CACHE_TTL:PT2M}
+    keycloak:
+      base-url: ${KEYCLOAK_BASE_URL:http://localhost:8180}
+      realm: ${KEYCLOAK_REALM:digital-wallet}
+  internal-security:
+    token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8180/realms/digital-wallet/protocol/openid-connect/token}
+    client-id: ${AUTH_KEYCLOAK_CLIENT_ID:be-auth-api}
+    private-key-location: ${AUTH_KEYCLOAK_PRIVATE_KEY_LOCATION:}
+    key-id: ${AUTH_KEYCLOAK_KEY_ID:be-auth-api-key-1}
+    assertion-ttl: ${AUTH_KEYCLOAK_ASSERTION_TTL:PT30S}
+    client-assertion-audience: ${AUTH_KEYCLOAK_ASSERTION_AUDIENCE:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

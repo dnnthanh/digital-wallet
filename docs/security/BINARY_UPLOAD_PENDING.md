@@ -1,0 +1,1 @@
+Temporary marker while the DOCX Git blob is attached. Remove in the same documentation update once the binary path is verified.

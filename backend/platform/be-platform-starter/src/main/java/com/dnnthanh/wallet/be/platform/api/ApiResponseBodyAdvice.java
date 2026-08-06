@@ -1,5 +1,6 @@
 package com.dnnthanh.wallet.be.platform.api;
 
+import java.util.Objects;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -18,7 +19,8 @@ public class ApiResponseBodyAdvice implements ResponseBodyAdvice<Object> {
     public boolean supports(
             MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
         Class<?> type = returnType.getParameterType();
-        return type != String.class
+        return Objects.isNull(returnType.getMethodAnnotation(RawResponse.class))
+                && type != String.class
                 && type != byte[].class
                 && !Resource.class.isAssignableFrom(type)
                 && !StreamingResponseBody.class.isAssignableFrom(type);

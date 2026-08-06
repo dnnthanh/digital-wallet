@@ -78,6 +78,7 @@ services:
       KC_METRICS_ENABLED: "true"
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME: http://localhost:8180
+      KEYCLOAK_DEMO_USER_PASSWORD: ${KEYCLOAK_DEMO_USER_PASSWORD:?KEYCLOAK_DEMO_USER_PASSWORD is required}
       JAVA_OPTS_APPEND: -Xms128m -Xmx384m
     ports:
       - 8180:8080

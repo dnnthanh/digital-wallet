@@ -5,6 +5,7 @@ import static com.dnnthanh.wallet.be.platform.constant.PlatformInvariantMessages
 import static com.dnnthanh.wallet.be.platform.constant.PlatformInvariantMessages.KAFKA_EVENT_REQUIRED;
 import static com.dnnthanh.wallet.be.platform.constant.PlatformInvariantMessages.KAFKA_EVENT_TYPE_REQUIRED;
 
+import com.dnnthanh.wallet.be.platform.context.UserContext;
 import com.dnnthanh.wallet.be.platform.event.EventEnvelope;
 import java.util.Arrays;
 import java.util.Objects;
@@ -36,6 +37,10 @@ public abstract class BaseDomainEventConsumer<T> {
     protected final T payload(EventEnvelope<T> event) {
         Objects.requireNonNull(event, KAFKA_EVENT_REQUIRED);
         return Objects.requireNonNull(event.payload(), KAFKA_EVENT_PAYLOAD_REQUIRED);
+    }
+
+    protected final UserContext systemUserContext(String serviceName) {
+        return UserContext.system(serviceName, UserContext.ActorType.KAFKA_CONSUMER);
     }
 
     protected final void consume(

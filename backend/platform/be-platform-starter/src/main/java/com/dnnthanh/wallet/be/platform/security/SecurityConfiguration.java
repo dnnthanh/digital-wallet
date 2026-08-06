@@ -27,9 +27,11 @@ public class SecurityConfiguration {
                                 registry.requestMatchers(
                                                 "/actuator/health/**",
                                                 "/actuator/prometheus",
+                                                "/.well-known/wallet-client-jwks.json",
                                                 "/error")
                                         .permitAll()
-                                        .requestMatchers("/private/**", "/internal/**")
+                                        .requestMatchers(
+                                                "/api/v1/**", "/private/**", "/internal/**")
                                         .authenticated()
                                         .anyRequest()
                                         .permitAll())

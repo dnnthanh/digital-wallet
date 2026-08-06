@@ -33,4 +33,12 @@ public class PlatformInvariantMessages {
     public static final String OBSERVATION_REGISTRY_REQUIRED = "observationRegistry is required";
     public static final String SERVICE_ACCESS_TOKEN_MISSING =
             "Keycloak returned no service access token";
+    public static final String CLIENT_ASSERTION_SIGN_FAILED =
+            "Unable to sign Keycloak client assertion";
+    public static final String CLIENT_PRIVATE_KEY_NOT_RSA =
+            "Configured client private key is not RSA CRT key material";
+    public static final String CLIENT_PRIVATE_KEY_LOAD_FAILED =
+            "Unable to load Keycloak client private key";
+    public static final String CLIENT_PUBLIC_KEY_DERIVATION_FAILED =
+            "Unable to derive Keycloak client public key";
 }

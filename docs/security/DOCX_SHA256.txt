@@ -1,0 +1,1 @@
+9abadf6c1fc17e6840355b23d5a7cd903a909581e44db66b81e54cefc6ad4b98  Keycloak_Authentication_Authorization_Deep_Dive_VI.docx
