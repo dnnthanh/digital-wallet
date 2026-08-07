@@ -57,9 +57,7 @@ class KycSecurityIntegrationTest {
         when(authorizationAdapter.currentAuthorization())
                 .thenReturn(new CurrentAuthorization(Set.of(), Set.of("/bank/demo-branch")));
 
-        mockMvc.perform(
-                        get("/api/v1/kyc/me")
-                                .with(jwt().jwt(token -> token.subject("user-123"))))
+        mockMvc.perform(get("/api/v1/kyc/me").with(jwt().jwt(token -> token.subject("user-123"))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
     }
