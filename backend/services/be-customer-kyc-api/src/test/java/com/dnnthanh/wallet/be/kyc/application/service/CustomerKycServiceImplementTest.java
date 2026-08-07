@@ -141,7 +141,6 @@ class CustomerKycServiceImplementTest {
     @Test
     void reviewerWithoutHierarchicalScopeCannotReadTarget() {
         CustomerKyc pending = draft(USER_ID, SCOPE).submit(NOW.minusSeconds(60));
-        when(currentActorPort.userId()).thenReturn(REVIEWER_ID);
         when(repository.findById(pending.kycId())).thenReturn(Optional.of(pending));
         when(authorizationPort.hasScope(SCOPE)).thenReturn(false);
 
