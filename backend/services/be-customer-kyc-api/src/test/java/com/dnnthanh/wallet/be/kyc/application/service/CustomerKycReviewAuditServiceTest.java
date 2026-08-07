@@ -68,11 +68,7 @@ class CustomerKycReviewAuditServiceTest {
 
         verify(reviewAuditPort)
                 .appendReview(
-                        pending.kycId(),
-                        REVIEWER_ID,
-                        KycReviewDecision.REJECT,
-                        "DOC_UNCLEAR",
-                        NOW);
+                        pending.kycId(), REVIEWER_ID, KycReviewDecision.REJECT, "DOC_UNCLEAR", NOW);
     }
 
     @Test
@@ -86,8 +82,7 @@ class CustomerKycReviewAuditServiceTest {
                 pending.kycId(), new KycReviewCommand(KycReviewDecision.VERIFY, "IGNORED_REASON"));
 
         verify(reviewAuditPort)
-                .appendReview(
-                        pending.kycId(), REVIEWER_ID, KycReviewDecision.VERIFY, null, NOW);
+                .appendReview(pending.kycId(), REVIEWER_ID, KycReviewDecision.VERIFY, null, NOW);
     }
 
     private static CustomerKyc pending() {
