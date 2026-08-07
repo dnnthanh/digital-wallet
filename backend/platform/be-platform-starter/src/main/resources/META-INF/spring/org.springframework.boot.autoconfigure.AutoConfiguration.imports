@@ -3,3 +3,4 @@ com.dnnthanh.wallet.be.platform.autoconfigure.PlatformObservabilityAutoConfigura
 com.dnnthanh.wallet.be.platform.autoconfigure.PlatformInternalSecurityAutoConfiguration
 com.dnnthanh.wallet.be.platform.autoconfigure.PlatformExecutionContextAutoConfiguration
 com.dnnthanh.wallet.be.platform.autoconfigure.PlatformSecurityAutoConfiguration
+com.dnnthanh.wallet.be.platform.autoconfigure.PlatformOutboxAutoConfiguration
