@@ -6,8 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record KycReviewDecisionRequest(
-        @NotNull KycReviewDecision decision,
-        @Size(max = 128) String rejectionReasonCode) {
+        @NotNull KycReviewDecision decision, @Size(max = 128) String rejectionReasonCode) {
     public KycReviewCommand toCommand() {
         return new KycReviewCommand(decision, rejectionReasonCode);
     }
