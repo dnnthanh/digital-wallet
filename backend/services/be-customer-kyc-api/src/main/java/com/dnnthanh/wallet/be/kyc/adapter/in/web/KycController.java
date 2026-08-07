@@ -39,8 +39,10 @@ public class KycController {
 
     @PutMapping("/me/draft")
     @PreAuthorize("@walletAuthorization.hasPermission('kyc:self:write')")
-    public ApiResponse<KycResponse> upsertMyDraft(@Valid @RequestBody UpsertKycDraftRequest request) {
-        return ApiResponse.success(KycResponse.from(upsertMyKycDraftUseCase.upsertMyDraft(request.toCommand())));
+    public ApiResponse<KycResponse> upsertMyDraft(
+            @Valid @RequestBody UpsertKycDraftRequest request) {
+        return ApiResponse.success(
+                KycResponse.from(upsertMyKycDraftUseCase.upsertMyDraft(request.toCommand())));
     }
 
     @PostMapping("/me/submit")
@@ -59,6 +61,7 @@ public class KycController {
     @PreAuthorize("@walletAuthorization.hasPermission('kyc:review')")
     public ApiResponse<KycResponse> review(
             @PathVariable UUID kycId, @Valid @RequestBody KycReviewDecisionRequest request) {
-        return ApiResponse.success(KycResponse.from(reviewKycUseCase.review(kycId, request.toCommand())));
+        return ApiResponse.success(
+                KycResponse.from(reviewKycUseCase.review(kycId, request.toCommand())));
     }
 }
