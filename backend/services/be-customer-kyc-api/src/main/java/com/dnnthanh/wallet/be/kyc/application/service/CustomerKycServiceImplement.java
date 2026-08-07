@@ -60,12 +60,17 @@ public class CustomerKycServiceImplement
         Instant now = clock.instant();
 
         CustomerKyc kyc =
-                repository.findByUserId(userId)
+                repository
+                        .findByUserId(userId)
                         .map(existing -> updateExistingDraft(existing, profile, now))
                         .orElseGet(
                                 () ->
                                         CustomerKyc.createDraft(
-                                                UUID.randomUUID(), userId, scopePath, profile, now));
+                                                UUID.randomUUID(),
+                                                userId,
+                                                scopePath,
+                                                profile,
+                                                now));
         return KycView.from(repository.save(kyc));
     }
 
@@ -119,12 +124,14 @@ public class CustomerKycServiceImplement
     }
 
     private CustomerKyc findOwnedKyc() {
-        return repository.findByUserId(currentActorPort.userId())
+        return repository
+                .findByUserId(currentActorPort.userId())
                 .orElseThrow(() -> new BusinessException(KycErrorCode.KYC_NOT_FOUND));
     }
 
     private CustomerKyc findReviewTarget(UUID kycId) {
-        return repository.findById(kycId)
+        return repository
+                .findById(kycId)
                 .orElseThrow(() -> new BusinessException(KycErrorCode.KYC_NOT_FOUND));
     }
 
@@ -134,7 +141,8 @@ public class CustomerKycServiceImplement
         }
     }
 
-    private void appendStatusChange(KycStatus previousStatus, CustomerKyc current, Instant changedAt) {
+    private void appendStatusChange(
+            KycStatus previousStatus, CustomerKyc current, Instant changedAt) {
         outboxPort.appendStatusChanged(
                 new KycStatusChangedPayload(
                         current.kycId(),
