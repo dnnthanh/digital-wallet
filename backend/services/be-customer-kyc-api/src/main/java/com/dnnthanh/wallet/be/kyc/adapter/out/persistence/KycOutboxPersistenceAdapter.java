@@ -5,6 +5,7 @@ import static com.dnnthanh.wallet.be.kyc.constant.KycEventTypes.CUSTOMER_KYC_STA
 import com.dnnthanh.wallet.be.kyc.application.event.KycStatusChangedPayload;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycOutboxPort;
 import com.dnnthanh.wallet.be.platform.outbox.OutboxPayloadCodec;
+import java.sql.Timestamp;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -31,6 +32,6 @@ public class KycOutboxPersistenceAdapter implements KycOutboxPort {
                 payload.kycId(),
                 CUSTOMER_KYC_STATUS_CHANGED,
                 payloadCodec.write(payload),
-                payload.changedAt());
+                Timestamp.from(payload.changedAt()));
     }
 }
