@@ -2,6 +2,7 @@ package com.dnnthanh.wallet.be.kyc.adapter.out.persistence;
 
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycReviewAuditPort;
 import com.dnnthanh.wallet.be.kyc.domain.KycReviewDecision;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,6 @@ public class KycReviewAuditPersistenceAdapter implements KycReviewAuditPort {
                 reviewerUserId,
                 decision.name(),
                 rejectionReasonCode,
-                reviewedAt);
+                Timestamp.from(reviewedAt));
     }
 }
