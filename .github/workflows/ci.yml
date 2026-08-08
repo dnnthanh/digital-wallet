@@ -50,22 +50,6 @@ jobs:
           cache: maven
       - name: Test backend
         run: ./mvnw -B -ntp -f backend/pom.xml verify
-      - name: Annotate backend test failures
-        if: failure()
-        shell: bash
-        run: |
-          set +e
-          found=false
-          while IFS= read -r report; do
-            if grep -Eq 'Failures: [1-9]|Errors: [1-9]|<<< FAILURE!|<<< ERROR!' "${report}"; then
-              found=true
-              summary="$(grep -E 'Tests run:|<<< FAILURE!|<<< ERROR!|Caused by:|Exception|Error' "${report}" | head -n 30 | tr '\n' ' ' | cut -c1-3500)"
-              echo "::error file=${report}::${summary}"
-            fi
-          done < <(find backend -type f \( -path '*/target/surefire-reports/*.txt' -o -path '*/target/failsafe-reports/*.txt' \) -print)
-          if [ "${found}" = false ]; then
-            echo "::error::Backend verify failed but no failing Surefire/Failsafe text report was found."
-          fi
 
   compose-validation:
     runs-on: ubuntu-latest
