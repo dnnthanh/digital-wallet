@@ -14,27 +14,27 @@
         "composite" : false
       },
       {
-        "name" : "permission:self:read",
+        "name" : "permission:SELF_READ",
         "description" : "Read the authenticated principal profile, permissions and scopes",
         "composite" : false
       },
       {
-        "name" : "permission:kyc:self:read",
+        "name" : "permission:KYC_SELF_READ",
         "description" : "Read the authenticated principal KYC profile",
         "composite" : false
       },
       {
-        "name" : "permission:kyc:self:write",
+        "name" : "permission:KYC_SELF_WRITE",
         "description" : "Create or update the authenticated principal KYC draft",
         "composite" : false
       },
       {
-        "name" : "permission:kyc:self:submit",
+        "name" : "permission:KYC_SELF_SUBMIT",
         "description" : "Submit the authenticated principal KYC profile for review",
         "composite" : false
       },
       {
-        "name" : "permission:kyc:review",
+        "name" : "permission:KYC_REVIEW",
         "description" : "Review KYC profiles within authorized group scopes",
         "composite" : false
       },
@@ -44,10 +44,10 @@
         "composite" : true,
         "composites" : {
           "realm" : [
-            "permission:self:read",
-            "permission:kyc:self:read",
-            "permission:kyc:self:write",
-            "permission:kyc:self:submit"
+            "permission:SELF_READ",
+            "permission:KYC_SELF_READ",
+            "permission:KYC_SELF_WRITE",
+            "permission:KYC_SELF_SUBMIT"
           ]
         }
       },
@@ -57,7 +57,7 @@
         "composite" : true,
         "composites" : {
           "realm" : [
-            "permission:kyc:review"
+            "permission:KYC_REVIEW"
           ]
         }
       }
