@@ -6,6 +6,7 @@ import com.dnnthanh.wallet.be.kyc.application.port.out.CustomerKycRepositoryPort
 import com.dnnthanh.wallet.be.kyc.domain.CustomerKyc;
 import com.dnnthanh.wallet.be.kyc.exception.KycErrorCode;
 import com.dnnthanh.wallet.be.platform.exception.BusinessException;
+import com.dnnthanh.wallet.be.platform.stereotype.Persistence;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -13,9 +14,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.stereotype.Component;
 
-@Component
+@Persistence
 @RequiredArgsConstructor
 public class CustomerKycPersistenceAdapter implements CustomerKycRepositoryPort {
     private static final String DOCUMENT_FINGERPRINT_CONSTRAINT =
