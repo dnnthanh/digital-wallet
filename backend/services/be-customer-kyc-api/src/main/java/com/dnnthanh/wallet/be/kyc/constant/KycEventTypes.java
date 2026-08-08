@@ -1,7 +1,8 @@
 package com.dnnthanh.wallet.be.kyc.constant;
 
-public final class KycEventTypes {
-    public static final String CUSTOMER_KYC_STATUS_CHANGED = "CUSTOMER_KYC_STATUS_CHANGED";
+import lombok.experimental.UtilityClass;
 
-    private KycEventTypes() {}
+@UtilityClass
+public class KycEventTypes {
+    public static final String CUSTOMER_KYC_STATUS_CHANGED = "CUSTOMER_KYC_STATUS_CHANGED";
 }
