@@ -161,13 +161,13 @@ jobs:
 
           PROFILE="$(curl -fsS \
             --header "Authorization: Bearer ${ACCESS_TOKEN}" \
-            http://localhost:8081/api/v1/me/profile)"
+            http://localhost:8081/private/api/v1/me/profile)"
           PERMISSIONS="$(curl -fsS \
             --header "Authorization: Bearer ${ACCESS_TOKEN}" \
-            http://localhost:8081/api/v1/me/permissions)"
+            http://localhost:8081/private/api/v1/me/permissions)"
           SCOPES="$(curl -fsS \
             --header "Authorization: Bearer ${ACCESS_TOKEN}" \
-            http://localhost:8081/api/v1/me/scopes)"
+            http://localhost:8081/private/api/v1/me/scopes)"
 
           jq -e '.data.username == "service-account-be-auth-api" and .data.actorType == "SERVICE"' \
             <<<"${PROFILE}" >/dev/null

@@ -1,6 +1,7 @@
 package com.dnnthanh.wallet.be.kyc.application.service;
 
 import com.dnnthanh.wallet.be.kyc.application.event.KycStatusChangedPayload;
+import com.dnnthanh.wallet.be.kyc.application.mapper.CustomerKycApplicationMapper;
 import com.dnnthanh.wallet.be.kyc.application.model.DocumentFingerprint;
 import com.dnnthanh.wallet.be.kyc.application.model.KycReviewCommand;
 import com.dnnthanh.wallet.be.kyc.application.model.KycView;
@@ -42,12 +43,13 @@ public class CustomerKycServiceImplement
     private final KycReviewAuditPort reviewAuditPort;
     private final CurrentActorPort currentActorPort;
     private final KycAuthorizationPort authorizationPort;
+    private final CustomerKycApplicationMapper mapper;
     private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
     public KycView getMyKyc() {
-        return KycView.from(findOwnedKyc());
+        return mapper.toView(findOwnedKyc());
     }
 
     @Override
@@ -56,7 +58,7 @@ public class CustomerKycServiceImplement
         String userId = currentActorPort.userId();
         String scopePath = authorizationPort.requireCustomerScope();
         DocumentFingerprint fingerprint = fingerprintPort.fingerprint(command.documentNumber());
-        KycProfile profile = toProfile(command, fingerprint);
+        KycProfile profile = mapper.toProfile(command, fingerprint);
         Instant now = clock.instant();
 
         CustomerKyc kyc =
@@ -71,7 +73,7 @@ public class CustomerKycServiceImplement
                                                 scopePath,
                                                 profile,
                                                 now));
-        return KycView.from(repository.save(kyc));
+        return mapper.toView(repository.save(kyc));
     }
 
     @Override
@@ -82,7 +84,7 @@ public class CustomerKycServiceImplement
         CustomerKyc submitted = current.submit(now);
         CustomerKyc saved = repository.save(submitted);
         appendStatusChange(current.status(), saved, now);
-        return KycView.from(saved);
+        return mapper.toView(saved);
     }
 
     @Override
@@ -90,7 +92,7 @@ public class CustomerKycServiceImplement
     public KycView getReview(UUID kycId) {
         CustomerKyc kyc = findReviewTarget(kycId);
         requireTargetScope(kyc);
-        return KycView.from(kyc);
+        return mapper.toView(kyc);
     }
 
     @Override
@@ -111,7 +113,7 @@ public class CustomerKycServiceImplement
                 saved.rejectionReasonCode(),
                 now);
         appendStatusChange(current.status(), saved, now);
-        return KycView.from(saved);
+        return mapper.toView(saved);
     }
 
     private CustomerKyc updateExistingDraft(CustomerKyc existing, KycProfile profile, Instant now) {
@@ -150,20 +152,5 @@ public class CustomerKycServiceImplement
                         previousStatus,
                         current.status(),
                         changedAt));
-    }
-
-    private KycProfile toProfile(UpsertKycDraftCommand command, DocumentFingerprint fingerprint) {
-        return new KycProfile(
-                command.legalName(),
-                command.dateOfBirth(),
-                command.nationality(),
-                command.documentType(),
-                fingerprint.fingerprint(),
-                fingerprint.last4(),
-                command.documentCountry(),
-                command.documentExpiresAt(),
-                command.addressLine1(),
-                command.city(),
-                command.country());
     }
 }

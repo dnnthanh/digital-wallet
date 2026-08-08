@@ -10,7 +10,6 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import com.dnnthanh.wallet.be.kyc.application.port.out.CurrentBearerTokenPort;
 import com.dnnthanh.wallet.be.kyc.exception.KycErrorCode;
-import com.dnnthanh.wallet.be.kyc.infrastructure.KycAuthProperties;
 import com.dnnthanh.wallet.be.platform.exception.BusinessException;
 import com.dnnthanh.wallet.be.platform.security.CurrentAuthorization;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,21 +34,20 @@ class AuthApiCurrentAuthorizationAdapterTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        adapter =
-                new AuthApiCurrentAuthorizationAdapter(
-                        builder, new KycAuthProperties("http://auth.test"), bearerTokenPort);
+        RestClient restClient = builder.baseUrl("http://auth.test").build();
+        adapter = new AuthApiCurrentAuthorizationAdapter(restClient, bearerTokenPort);
         when(bearerTokenPort.authorizationHeader()).thenReturn("Bearer access-token");
     }
 
     @Test
     void relaysBearerAndCombinesEffectivePermissionsAndScopes() {
-        server.expect(requestTo("http://auth.test/api/v1/me/permissions"))
+        server.expect(requestTo("http://auth.test/private/api/v1/me/permissions"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andRespond(
                         withSuccess(
                                 "{\"data\":{\"permissions\":[\"kyc:review\",\"kyc:self:read\"]},\"metadata\":null,\"error\":null}",
                                 MediaType.APPLICATION_JSON));
-        server.expect(requestTo("http://auth.test/api/v1/me/scopes"))
+        server.expect(requestTo("http://auth.test/private/api/v1/me/scopes"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
                 .andRespond(
                         withSuccess(
@@ -66,7 +64,7 @@ class AuthApiCurrentAuthorizationAdapterTest {
 
     @Test
     void dependencyFailureNeverBecomesAuthorizationSuccess() {
-        server.expect(requestTo("http://auth.test/api/v1/me/permissions"))
+        server.expect(requestTo("http://auth.test/private/api/v1/me/permissions"))
                 .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
 
         assertThatThrownBy(adapter::currentAuthorization)

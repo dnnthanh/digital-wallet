@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.dnnthanh.wallet.be")
 @ConfigurationPropertiesScan
 public class CustomerKycApiApplication {
     public static void main(String[] args) {

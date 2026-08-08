@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.dnnthanh.wallet.be.kyc.adapter.in.web.mapper.KycApiMapper;
 import com.dnnthanh.wallet.be.kyc.api.request.UpsertKycDraftRequest;
 import com.dnnthanh.wallet.be.kyc.application.model.KycView;
 import com.dnnthanh.wallet.be.kyc.application.port.in.GetKycReviewQuery;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
@@ -51,7 +53,8 @@ class KycControllerTest {
                         upsertMyKycDraftUseCase,
                         submitMyKycUseCase,
                         getKycReviewQuery,
-                        reviewKycUseCase);
+                        reviewKycUseCase,
+                        Mappers.getMapper(KycApiMapper.class));
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
@@ -60,7 +63,7 @@ class KycControllerTest {
         when(upsertMyKycDraftUseCase.upsertMyDraft(any())).thenReturn(view());
 
         mockMvc.perform(
-                        put("/api/v1/kyc/me/draft")
+                        put("/private/api/v1/kyc/me/draft")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(
                                         """

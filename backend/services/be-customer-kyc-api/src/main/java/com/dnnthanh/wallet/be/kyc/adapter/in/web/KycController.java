@@ -5,6 +5,7 @@ import static com.dnnthanh.wallet.be.kyc.constant.KycAuthorizationExpressions.KY
 import static com.dnnthanh.wallet.be.kyc.constant.KycAuthorizationExpressions.KYC_SELF_SUBMIT;
 import static com.dnnthanh.wallet.be.kyc.constant.KycAuthorizationExpressions.KYC_SELF_WRITE;
 
+import com.dnnthanh.wallet.be.kyc.adapter.in.web.mapper.KycApiMapper;
 import com.dnnthanh.wallet.be.kyc.api.request.KycReviewDecisionRequest;
 import com.dnnthanh.wallet.be.kyc.api.request.UpsertKycDraftRequest;
 import com.dnnthanh.wallet.be.kyc.api.response.KycResponse;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/kyc")
+@RequestMapping("/private/api/v1/kyc")
 @RequiredArgsConstructor
 public class KycController {
     private final GetMyKycQuery getMyKycQuery;
@@ -35,11 +36,12 @@ public class KycController {
     private final SubmitMyKycUseCase submitMyKycUseCase;
     private final GetKycReviewQuery getKycReviewQuery;
     private final ReviewKycUseCase reviewKycUseCase;
+    private final KycApiMapper mapper;
 
     @GetMapping("/me")
     @PreAuthorize(KYC_SELF_READ)
     public ApiResponse<KycResponse> getMyKyc() {
-        return ApiResponse.success(KycResponse.from(getMyKycQuery.getMyKyc()));
+        return ApiResponse.success(mapper.modelToResponse(getMyKycQuery.getMyKyc()));
     }
 
     @PutMapping("/me/draft")
@@ -47,19 +49,20 @@ public class KycController {
     public ApiResponse<KycResponse> upsertMyDraft(
             @Valid @RequestBody UpsertKycDraftRequest request) {
         return ApiResponse.success(
-                KycResponse.from(upsertMyKycDraftUseCase.upsertMyDraft(request.toCommand())));
+                mapper.modelToResponse(
+                        upsertMyKycDraftUseCase.upsertMyDraft(mapper.draftRequestToCommand(request))));
     }
 
     @PostMapping("/me/submit")
     @PreAuthorize(KYC_SELF_SUBMIT)
     public ApiResponse<KycResponse> submitMyKyc() {
-        return ApiResponse.success(KycResponse.from(submitMyKycUseCase.submitMyKyc()));
+        return ApiResponse.success(mapper.modelToResponse(submitMyKycUseCase.submitMyKyc()));
     }
 
     @GetMapping("/reviews/{kycId}")
     @PreAuthorize(KYC_REVIEW)
     public ApiResponse<KycResponse> getReview(@PathVariable UUID kycId) {
-        return ApiResponse.success(KycResponse.from(getKycReviewQuery.getReview(kycId)));
+        return ApiResponse.success(mapper.modelToResponse(getKycReviewQuery.getReview(kycId)));
     }
 
     @PostMapping("/reviews/{kycId}/decision")
@@ -67,6 +70,7 @@ public class KycController {
     public ApiResponse<KycResponse> review(
             @PathVariable UUID kycId, @Valid @RequestBody KycReviewDecisionRequest request) {
         return ApiResponse.success(
-                KycResponse.from(reviewKycUseCase.review(kycId, request.toCommand())));
+                mapper.modelToResponse(
+                        reviewKycUseCase.review(kycId, mapper.reviewRequestToCommand(request))));
     }
 }

@@ -3,6 +3,7 @@ package com.dnnthanh.wallet.be.kyc.adapter.in.web;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,13 +19,18 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(
-        classes = CustomerKycApiApplication.class,
+        classes = {
+            CustomerKycApiApplication.class,
+            KycSecurityIntegrationTest.PublicProbeController.class
+        },
         properties = {
             "wallet.kyc.security.document-hmac-secret=test-secret",
             "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:65535/jwks"
@@ -46,8 +52,15 @@ class KycSecurityIntegrationTest {
     }
 
     @Test
-    void unauthenticatedKycRequestReturns401() throws Exception {
-        mockMvc.perform(get("/api/v1/kyc/me"))
+    void publicRouteAllowsAnonymousRequest() throws Exception {
+        mockMvc.perform(get("/public/ping"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("pong"));
+    }
+
+    @Test
+    void unauthenticatedPrivateKycRequestReturns401() throws Exception {
+        mockMvc.perform(get("/private/api/v1/kyc/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error.code").value("UNAUTHORIZED"));
     }
@@ -57,8 +70,18 @@ class KycSecurityIntegrationTest {
         when(authorizationAdapter.currentAuthorization())
                 .thenReturn(new CurrentAuthorization(Set.of(), Set.of("/bank/demo-branch")));
 
-        mockMvc.perform(get("/api/v1/kyc/me").with(jwt().jwt(token -> token.subject("user-123"))))
+        mockMvc.perform(
+                        get("/private/api/v1/kyc/me")
+                                .with(jwt().jwt(token -> token.subject("user-123"))))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error.code").value("FORBIDDEN"));
+    }
+
+    @RestController
+    static class PublicProbeController {
+        @GetMapping("/public/ping")
+        String ping() {
+            return "pong";
+        }
     }
 }

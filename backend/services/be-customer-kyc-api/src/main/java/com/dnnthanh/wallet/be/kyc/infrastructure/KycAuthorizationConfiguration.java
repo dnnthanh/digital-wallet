@@ -3,7 +3,6 @@ package com.dnnthanh.wallet.be.kyc.infrastructure;
 import com.dnnthanh.wallet.be.kyc.adapter.out.auth.AuthApiCurrentAuthorizationAdapter;
 import com.dnnthanh.wallet.be.kyc.adapter.out.auth.RequestKycAuthorization;
 import com.dnnthanh.wallet.be.kyc.adapter.out.security.HmacDocumentFingerprintAdapter;
-import com.dnnthanh.wallet.be.kyc.application.port.out.CurrentBearerTokenPort;
 import com.dnnthanh.wallet.be.kyc.application.port.out.DocumentFingerprintPort;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycAuthorizationPort;
 import com.dnnthanh.wallet.be.platform.security.CurrentAuthorization;
@@ -18,11 +17,8 @@ import org.springframework.web.context.annotation.RequestScope;
 @Configuration
 public class KycAuthorizationConfiguration {
     @Bean
-    AuthApiCurrentAuthorizationAdapter authApiCurrentAuthorizationAdapter(
-            RestClient.Builder builder,
-            KycAuthProperties properties,
-            CurrentBearerTokenPort bearerTokenPort) {
-        return new AuthApiCurrentAuthorizationAdapter(builder, properties, bearerTokenPort);
+    RestClient kycAuthRestClient(RestClient.Builder builder, KycAuthProperties properties) {
+        return builder.baseUrl(properties.authApiBaseUrl()).build();
     }
 
     @Bean
@@ -39,8 +35,9 @@ public class KycAuthorizationConfiguration {
 
     @Bean
     @RequestScope(proxyMode = ScopedProxyMode.INTERFACES)
-    KycAuthorizationPort kycAuthorizationPort(CurrentAuthorization currentAuthorization) {
-        return new RequestKycAuthorization(currentAuthorization);
+    KycAuthorizationPort kycAuthorizationPort(
+            CurrentAuthorization currentAuthorization, WalletAuthorization walletAuthorization) {
+        return new RequestKycAuthorization(currentAuthorization, walletAuthorization);
     }
 
     @Bean

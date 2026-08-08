@@ -1,6 +1,5 @@
 package com.dnnthanh.wallet.be.kyc.api.request;
 
-import com.dnnthanh.wallet.be.kyc.application.model.UpsertKycDraftCommand;
 import com.dnnthanh.wallet.be.kyc.domain.KycDocumentType;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -20,18 +19,4 @@ public record UpsertKycDraftRequest(
         @NotNull @Future LocalDate documentExpiresAt,
         @NotBlank @Size(max = 512) String addressLine1,
         @NotBlank @Size(max = 255) String city,
-        @NotBlank @Pattern(regexp = "^[A-Z]{2}$") String country) {
-    public UpsertKycDraftCommand toCommand() {
-        return new UpsertKycDraftCommand(
-                legalName,
-                dateOfBirth,
-                nationality,
-                documentType,
-                documentNumber,
-                documentCountry,
-                documentExpiresAt,
-                addressLine1,
-                city,
-                country);
-    }
-}
+        @NotBlank @Pattern(regexp = "^[A-Z]{2}$") String country) {}

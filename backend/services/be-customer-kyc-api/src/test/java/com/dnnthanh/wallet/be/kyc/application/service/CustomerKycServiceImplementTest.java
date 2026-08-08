@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dnnthanh.wallet.be.kyc.application.event.KycStatusChangedPayload;
+import com.dnnthanh.wallet.be.kyc.application.mapper.CustomerKycApplicationMapper;
 import com.dnnthanh.wallet.be.kyc.application.model.DocumentFingerprint;
 import com.dnnthanh.wallet.be.kyc.application.model.KycReviewCommand;
 import com.dnnthanh.wallet.be.kyc.application.model.KycView;
@@ -34,6 +35,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -64,6 +66,7 @@ class CustomerKycServiceImplementTest {
                         reviewAuditPort,
                         currentActorPort,
                         authorizationPort,
+                        Mappers.getMapper(CustomerKycApplicationMapper.class),
                         Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

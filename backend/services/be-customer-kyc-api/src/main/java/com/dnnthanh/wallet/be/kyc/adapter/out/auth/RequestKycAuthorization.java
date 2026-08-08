@@ -6,16 +6,13 @@ import com.dnnthanh.wallet.be.platform.exception.BusinessException;
 import com.dnnthanh.wallet.be.platform.security.CurrentAuthorization;
 import com.dnnthanh.wallet.be.platform.security.WalletAuthorization;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
+@RequiredArgsConstructor
 public class RequestKycAuthorization implements KycAuthorizationPort {
     private final CurrentAuthorization currentAuthorization;
     private final WalletAuthorization walletAuthorization;
-
-    public RequestKycAuthorization(CurrentAuthorization currentAuthorization) {
-        this.currentAuthorization = currentAuthorization;
-        this.walletAuthorization = new WalletAuthorization(currentAuthorization);
-    }
 
     @Override
     public String requireCustomerScope() {

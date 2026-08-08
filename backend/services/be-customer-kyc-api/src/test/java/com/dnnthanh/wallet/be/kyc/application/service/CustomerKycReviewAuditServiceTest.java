@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.dnnthanh.wallet.be.kyc.application.mapper.CustomerKycApplicationMapper;
 import com.dnnthanh.wallet.be.kyc.application.model.KycReviewCommand;
 import com.dnnthanh.wallet.be.kyc.application.port.out.CurrentActorPort;
 import com.dnnthanh.wallet.be.kyc.application.port.out.CustomerKycRepositoryPort;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -51,6 +53,7 @@ class CustomerKycReviewAuditServiceTest {
                         reviewAuditPort,
                         currentActorPort,
                         authorizationPort,
+                        Mappers.getMapper(CustomerKycApplicationMapper.class),
                         Clock.fixed(NOW, ZoneOffset.UTC));
         when(currentActorPort.userId()).thenReturn(REVIEWER_ID);
         when(authorizationPort.hasScope("/bank/demo-branch")).thenReturn(true);

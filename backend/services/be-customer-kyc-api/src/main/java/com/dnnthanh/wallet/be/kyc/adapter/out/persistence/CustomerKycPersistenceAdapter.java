@@ -27,19 +27,19 @@ public class CustomerKycPersistenceAdapter implements CustomerKycRepositoryPort 
 
     @Override
     public Optional<CustomerKyc> findByUserId(String userId) {
-        return repository.findByUserId(userId).map(mapper::toDomain);
+        return repository.findByUserId(userId).map(mapper::entityToModel);
     }
 
     @Override
     public Optional<CustomerKyc> findById(UUID kycId) {
-        return repository.findById(kycId).map(mapper::toDomain);
+        return repository.findById(kycId).map(mapper::entityToModel);
     }
 
     @Override
     public CustomerKyc save(CustomerKyc kyc) {
         try {
-            CustomerKycEntity saved = repository.saveAndFlush(mapper.toEntity(kyc));
-            return mapper.toDomain(saved);
+            CustomerKycEntity saved = repository.saveAndFlush(mapper.modelToEntity(kyc));
+            return mapper.entityToModel(saved);
         } catch (OptimisticLockingFailureException failure) {
             throw new BusinessException(KycErrorCode.KYC_CONCURRENT_MODIFICATION);
         } catch (DataIntegrityViolationException failure) {

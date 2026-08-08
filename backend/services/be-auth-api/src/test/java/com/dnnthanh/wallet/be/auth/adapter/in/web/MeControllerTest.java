@@ -44,7 +44,7 @@ class MeControllerTest {
                                 UserContext.ActorType.USER,
                                 Set.of("role:wallet-user")));
 
-        mockMvc.perform(get("/api/v1/me/profile"))
+        mockMvc.perform(get("/private/api/v1/me/profile"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").value("user-1"))
                 .andExpect(jsonPath("$.data.username").value("wallet-demo"))
@@ -56,10 +56,10 @@ class MeControllerTest {
         when(permissionsQuery.getMyPermissions()).thenReturn(Set.of("self:read"));
         when(scopesQuery.getMyScopes()).thenReturn(Set.of("/bank/demo-branch"));
 
-        mockMvc.perform(get("/api/v1/me/permissions"))
+        mockMvc.perform(get("/private/api/v1/me/permissions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.permissions[0]").value("self:read"));
-        mockMvc.perform(get("/api/v1/me/scopes"))
+        mockMvc.perform(get("/private/api/v1/me/scopes"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.scopes[0]").value("/bank/demo-branch"));
     }
