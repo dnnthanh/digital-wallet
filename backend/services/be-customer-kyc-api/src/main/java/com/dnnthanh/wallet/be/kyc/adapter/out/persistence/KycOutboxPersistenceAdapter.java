@@ -2,36 +2,30 @@ package com.dnnthanh.wallet.be.kyc.adapter.out.persistence;
 
 import static com.dnnthanh.wallet.be.kyc.constant.KycEventTypes.CUSTOMER_KYC_STATUS_CHANGED;
 
+import com.dnnthanh.wallet.be.kyc.adapter.out.persistence.entity.KycOutboxEntity;
+import com.dnnthanh.wallet.be.kyc.adapter.out.persistence.repository.KycOutboxJpaRepository;
 import com.dnnthanh.wallet.be.kyc.application.event.KycStatusChangedPayload;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycOutboxPort;
 import com.dnnthanh.wallet.be.platform.outbox.OutboxPayloadCodec;
-import java.sql.Timestamp;
+import com.dnnthanh.wallet.be.platform.stereotype.Persistence;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 
-@Component
+@Persistence
 @RequiredArgsConstructor
 public class KycOutboxPersistenceAdapter implements KycOutboxPort {
-    private static final String INSERT_SQL =
-            """
-            insert into kyc_outbox_event
-                (event_id, aggregate_id, event_type, payload, created_at, attempt_count)
-            values (?, ?, ?, cast(? as jsonb), ?, 0)
-            """;
-
-    private final JdbcTemplate jdbcTemplate;
+    private final KycOutboxJpaRepository repository;
     private final OutboxPayloadCodec payloadCodec;
 
     @Override
     public void appendStatusChanged(KycStatusChangedPayload payload) {
-        jdbcTemplate.update(
-                INSERT_SQL,
-                UUID.randomUUID(),
-                payload.kycId(),
-                CUSTOMER_KYC_STATUS_CHANGED,
-                payloadCodec.write(payload),
-                Timestamp.from(payload.changedAt()));
+        KycOutboxEntity entity = new KycOutboxEntity();
+        entity.setEventId(UUID.randomUUID());
+        entity.setAggregateId(payload.kycId());
+        entity.setEventType(CUSTOMER_KYC_STATUS_CHANGED);
+        entity.setPayload(payloadCodec.write(payload));
+        entity.setCreatedAt(payload.changedAt());
+        entity.setAttemptCount(0);
+        repository.save(entity);
     }
 }
