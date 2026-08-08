@@ -1,25 +1,18 @@
 package com.dnnthanh.wallet.be.kyc.adapter.out.persistence;
 
+import com.dnnthanh.wallet.be.kyc.adapter.out.persistence.entity.KycReviewAuditEntity;
+import com.dnnthanh.wallet.be.kyc.adapter.out.persistence.repository.KycReviewAuditJpaRepository;
 import com.dnnthanh.wallet.be.kyc.application.port.out.KycReviewAuditPort;
 import com.dnnthanh.wallet.be.kyc.domain.KycReviewDecision;
-import java.sql.Timestamp;
+import com.dnnthanh.wallet.be.platform.stereotype.Persistence;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 
-@Component
+@Persistence
 @RequiredArgsConstructor
 public class KycReviewAuditPersistenceAdapter implements KycReviewAuditPort {
-    private static final String INSERT_SQL =
-            """
-            insert into kyc_review_audit
-                (audit_id, kyc_id, reviewer_user_id, decision, rejection_reason_code, reviewed_at)
-            values (?, ?, ?, ?, ?, ?)
-            """;
-
-    private final JdbcTemplate jdbcTemplate;
+    private final KycReviewAuditJpaRepository repository;
 
     @Override
     public void appendReview(
@@ -28,13 +21,13 @@ public class KycReviewAuditPersistenceAdapter implements KycReviewAuditPort {
             KycReviewDecision decision,
             String rejectionReasonCode,
             Instant reviewedAt) {
-        jdbcTemplate.update(
-                INSERT_SQL,
-                UUID.randomUUID(),
-                kycId,
-                reviewerUserId,
-                decision.name(),
-                rejectionReasonCode,
-                Timestamp.from(reviewedAt));
+        KycReviewAuditEntity entity = new KycReviewAuditEntity();
+        entity.setAuditId(UUID.randomUUID());
+        entity.setKycId(kycId);
+        entity.setReviewerUserId(reviewerUserId);
+        entity.setDecision(decision);
+        entity.setRejectionReasonCode(rejectionReasonCode);
+        entity.setReviewedAt(reviewedAt);
+        repository.save(entity);
     }
 }
