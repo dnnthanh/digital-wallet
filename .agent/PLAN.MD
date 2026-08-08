@@ -5,7 +5,7 @@
 | DW-000 | Project bootstrap | DONE | - |
 | DW-001 | Platform foundation | IN_REVIEW | DW-000 |
 | DW-002 | Keycloak authentication/authorization | IN_REVIEW | DW-001 |
-| DW-003 | Customer KYC | PLANNED | DW-002 |
+| DW-003 | Customer KYC | IN_REVIEW | DW-002 |
 | DW-004 | Wallet account | PLANNED | DW-002, DW-003 |
 | DW-005 | Double-entry ledger | PLANNED | DW-001 |
 | DW-006 | Balance projection | PLANNED | DW-005 |

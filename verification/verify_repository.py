@@ -24,7 +24,6 @@ required = [
     'backend/pom.xml',
     'backend/platform/be-platform-starter/pom.xml',
     'backend/platform/be-platform-starter/src/main/resources/platform-kafka.yml',
-    'backend/platform/be-platform-starter/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports',
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/autoconfigure/PlatformObservabilityAutoConfiguration.java',
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/trace/PlatformKafkaObservationBeanPostProcessor.java',
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/constant/PlatformInvariantMessages.java',
@@ -94,11 +93,29 @@ for pom in [
         except Exception as exc:
             errors.append(f'{pom.relative_to(ROOT)} is invalid XML: {exc}')
 
-# Enforce that tracing stays in the platform auto-configuration rather than feature code.
-auto_imports_path = ROOT / 'backend/platform/be-platform-starter/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports'
-auto_imports = auto_imports_path.read_text(encoding='utf-8') if auto_imports_path.exists() else ''
-if 'com.dnnthanh.wallet.be.platform.autoconfigure.PlatformObservabilityAutoConfiguration' not in auto_imports:
-    errors.append('platform starter must auto-import PlatformObservabilityAutoConfiguration')
+# Runnable services scan only their bounded context plus shared platform configuration.
+# Scanning the entire wallet root also discovers optional platform adapters (Kafka, request-scoped
+# security helpers, etc.) and can make unrelated services fail during ApplicationContext startup.
+platform_config_package = 'com.dnnthanh.wallet.be.platform.autoconfigure'
+for application_path in ROOT.glob('backend/services/be-*/src/main/java/**/*Application.java'):
+    application = application_path.read_text(encoding='utf-8')
+    package_match = re.search(r'(?m)^package\s+([\w.]+);', application)
+    if package_match is None:
+        errors.append(f'runnable service application missing package declaration: {application_path.relative_to(ROOT)}')
+        continue
+
+    service_package = package_match.group(1)
+    if 'scanBasePackages = "com.dnnthanh.wallet.be"' in application:
+        errors.append(
+            f'runnable service must not scan the entire shared wallet root: '
+            f'{application_path.relative_to(ROOT)}'
+        )
+    for required_package in [service_package, platform_config_package]:
+        if f'"{required_package}"' not in application:
+            errors.append(
+                f'runnable service component scan must include {required_package}: '
+                f'{application_path.relative_to(ROOT)}'
+            )
 
 observability_config_path = ROOT / 'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/autoconfigure/PlatformObservabilityAutoConfiguration.java'
 observability_config = observability_config_path.read_text(encoding='utf-8') if observability_config_path.exists() else ''

@@ -11,7 +11,6 @@ import java.security.KeyPairGenerator;
 import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.client.RestClient;
 
@@ -19,7 +18,7 @@ class PlatformInternalSecurityAutoConfigurationTest {
     @TempDir Path tempDir;
 
     @Test
-    void shouldCreatePrivateKeyJwtBeansFromAutoConfiguration() throws Exception {
+    void shouldCreatePrivateKeyJwtBeansFromPlatformConfiguration() throws Exception {
         var generator = KeyPairGenerator.getInstance("RSA");
         generator.initialize(2048);
         var keyPair = generator.generateKeyPair();
@@ -32,8 +31,7 @@ class PlatformInternalSecurityAutoConfigurationTest {
                 "-----BEGIN PRIVATE KEY-----\n" + encoded + "\n-----END PRIVATE KEY-----\n");
 
         new ApplicationContextRunner()
-                .withConfiguration(
-                        AutoConfigurations.of(PlatformInternalSecurityAutoConfiguration.class))
+                .withUserConfiguration(PlatformInternalSecurityAutoConfiguration.class)
                 .withBean(RestClient.Builder.class, RestClient::builder)
                 .withPropertyValues(
                         "wallet.internal-security.token-uri=http://keycloak/token",

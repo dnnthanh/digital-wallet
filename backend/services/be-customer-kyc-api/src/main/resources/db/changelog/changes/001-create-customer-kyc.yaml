@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-customer-kyc
+      author: openai
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE TABLE customer_kyc (
+                  kyc_id UUID PRIMARY KEY,
+                  user_id VARCHAR(255) NOT NULL,
+                  scope_path VARCHAR(512) NOT NULL,
+                  legal_name VARCHAR(255) NOT NULL,
+                  date_of_birth DATE NOT NULL,
+                  nationality VARCHAR(2) NOT NULL,
+                  document_type VARCHAR(32) NOT NULL,
+                  document_fingerprint VARCHAR(64) NOT NULL,
+                  document_last4 VARCHAR(4) NOT NULL,
+                  document_country VARCHAR(2) NOT NULL,
+                  document_expires_at DATE NOT NULL,
+                  address_line1 VARCHAR(512) NOT NULL,
+                  city VARCHAR(255) NOT NULL,
+                  country VARCHAR(2) NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  submitted_at TIMESTAMPTZ,
+                  reviewed_at TIMESTAMPTZ,
+                  reviewed_by VARCHAR(255),
+                  rejection_reason_code VARCHAR(128),
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  CONSTRAINT uk_customer_kyc_user_id UNIQUE (user_id),
+                  CONSTRAINT uk_customer_kyc_document_fingerprint UNIQUE (document_fingerprint)
+              );
+
+              CREATE INDEX idx_customer_kyc_status_scope
+                  ON customer_kyc (status, scope_path);
