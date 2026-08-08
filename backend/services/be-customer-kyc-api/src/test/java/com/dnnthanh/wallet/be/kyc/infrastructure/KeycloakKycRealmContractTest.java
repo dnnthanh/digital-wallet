@@ -15,10 +15,10 @@ class KeycloakKycRealmContractTest {
                         .normalize();
         String realm = Files.readString(realmPath);
 
-        assertThat(realm).contains("permission:kyc:self:read");
-        assertThat(realm).contains("permission:kyc:self:write");
-        assertThat(realm).contains("permission:kyc:self:submit");
-        assertThat(realm).contains("permission:kyc:review");
+        assertThat(realm).contains("permission:KYC_SELF_READ");
+        assertThat(realm).contains("permission:KYC_SELF_WRITE");
+        assertThat(realm).contains("permission:KYC_SELF_SUBMIT");
+        assertThat(realm).contains("permission:KYC_REVIEW");
         assertThat(realm).contains("role:wallet-user");
         assertThat(realm).contains("role:kyc-reviewer");
         assertThat(realm).contains("${KEYCLOAK_DEMO_USER_PASSWORD}");
