@@ -16,15 +16,15 @@ class KeycloakAuthorizationMapperTest {
                         "user-1",
                         List.of(
                                 new KeycloakRoleRepresentation("role:wallet-user"),
-                                new KeycloakRoleRepresentation("permission:transfer:create"),
-                                new KeycloakRoleRepresentation("permission:self:read"),
-                                new KeycloakRoleRepresentation("permission:self:read")),
+                                new KeycloakRoleRepresentation("permission:TRANSFER_CREATE"),
+                                new KeycloakRoleRepresentation("permission:SELF_READ"),
+                                new KeycloakRoleRepresentation("permission:SELF_READ")),
                         List.of(
                                 new KeycloakGroupRepresentation("/bank/demo-branch"),
                                 new KeycloakGroupRepresentation("/bank/demo-branch"),
                                 new KeycloakGroupRepresentation("/bank")));
 
-        assertThat(authorization.permissions()).containsExactly("self:read", "transfer:create");
+        assertThat(authorization.permissions()).containsExactly("SELF_READ", "TRANSFER_CREATE");
         assertThat(authorization.scopes()).containsExactly("/bank", "/bank/demo-branch");
     }
 }
