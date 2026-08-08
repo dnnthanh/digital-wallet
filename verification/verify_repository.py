@@ -93,16 +93,29 @@ for pom in [
         except Exception as exc:
             errors.append(f'{pom.relative_to(ROOT)} is invalid XML: {exc}')
 
-# Runnable services scan the shared wallet root, matching the E-commerce reference shape.
-# This keeps platform configuration discoverable without maintaining AutoConfiguration.imports
-# every time a platform configuration class is added.
+# Runnable services scan only their bounded context plus shared platform configuration.
+# Scanning the entire wallet root also discovers optional platform adapters (Kafka, request-scoped
+# security helpers, etc.) and can make unrelated services fail during ApplicationContext startup.
+platform_config_package = 'com.dnnthanh.wallet.be.platform.autoconfigure'
 for application_path in ROOT.glob('backend/services/be-*/src/main/java/**/*Application.java'):
     application = application_path.read_text(encoding='utf-8')
-    if '@SpringBootApplication(scanBasePackages = "com.dnnthanh.wallet.be")' not in application:
+    package_match = re.search(r'(?m)^package\s+([\w.]+);', application)
+    if package_match is None:
+        errors.append(f'runnable service application missing package declaration: {application_path.relative_to(ROOT)}')
+        continue
+
+    service_package = package_match.group(1)
+    if 'scanBasePackages = "com.dnnthanh.wallet.be"' in application:
         errors.append(
-            f'runnable service must scan shared wallet root instead of relying on manual auto-import lists: '
+            f'runnable service must not scan the entire shared wallet root: '
             f'{application_path.relative_to(ROOT)}'
         )
+    for required_package in [service_package, platform_config_package]:
+        if f'"{required_package}"' not in application:
+            errors.append(
+                f'runnable service component scan must include {required_package}: '
+                f'{application_path.relative_to(ROOT)}'
+            )
 
 observability_config_path = ROOT / 'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/autoconfigure/PlatformObservabilityAutoConfiguration.java'
 observability_config = observability_config_path.read_text(encoding='utf-8') if observability_config_path.exists() else ''
