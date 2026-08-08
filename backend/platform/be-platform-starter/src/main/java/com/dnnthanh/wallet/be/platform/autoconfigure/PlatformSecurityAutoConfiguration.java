@@ -7,12 +7,12 @@ import com.dnnthanh.wallet.be.platform.web.error.ApiErrorFactory;
 import com.dnnthanh.wallet.be.platform.web.error.GlobalExceptionHandler;
 import com.dnnthanh.wallet.be.platform.web.security.ApiAccessDeniedHandler;
 import com.dnnthanh.wallet.be.platform.web.security.ApiAuthenticationEntryPoint;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 /** Shared servlet security, identity and stable API error handling for wallet services. */
-@AutoConfiguration
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @Import({
     SecurityConfiguration.class,
