@@ -50,7 +50,8 @@ public class KycController {
             @Valid @RequestBody UpsertKycDraftRequest request) {
         return ApiResponse.success(
                 mapper.modelToResponse(
-                        upsertMyKycDraftUseCase.upsertMyDraft(mapper.draftRequestToCommand(request))));
+                        upsertMyKycDraftUseCase.upsertMyDraft(
+                                mapper.draftRequestToCommand(request))));
     }
 
     @PostMapping("/me/submit")

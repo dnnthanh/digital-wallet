@@ -51,7 +51,8 @@ class RequestKycAuthorizationTest {
                                         .isEqualTo(KycErrorCode.KYC_SCOPE_REQUIRED));
     }
 
-    private static RequestKycAuthorization authorization(CurrentAuthorization currentAuthorization) {
+    private static RequestKycAuthorization authorization(
+            CurrentAuthorization currentAuthorization) {
         return new RequestKycAuthorization(
                 currentAuthorization, new WalletAuthorization(currentAuthorization));
     }

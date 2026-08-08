@@ -21,7 +21,8 @@ public class AuthApiCurrentAuthorizationAdapter {
 
     public CurrentAuthorization currentAuthorization() {
         try {
-            return new CurrentAuthorization(Set.copyOf(loadPermissions()), Set.copyOf(loadScopes()));
+            return new CurrentAuthorization(
+                    Set.copyOf(loadPermissions()), Set.copyOf(loadScopes()));
         } catch (RuntimeException failure) {
             throw new BusinessException(KycErrorCode.KYC_AUTHORIZATION_UNAVAILABLE);
         }

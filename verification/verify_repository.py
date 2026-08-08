@@ -24,7 +24,6 @@ required = [
     'backend/pom.xml',
     'backend/platform/be-platform-starter/pom.xml',
     'backend/platform/be-platform-starter/src/main/resources/platform-kafka.yml',
-    'backend/platform/be-platform-starter/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports',
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/autoconfigure/PlatformObservabilityAutoConfiguration.java',
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/trace/PlatformKafkaObservationBeanPostProcessor.java',
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/constant/PlatformInvariantMessages.java',
@@ -94,11 +93,16 @@ for pom in [
         except Exception as exc:
             errors.append(f'{pom.relative_to(ROOT)} is invalid XML: {exc}')
 
-# Enforce that tracing stays in the platform auto-configuration rather than feature code.
-auto_imports_path = ROOT / 'backend/platform/be-platform-starter/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports'
-auto_imports = auto_imports_path.read_text(encoding='utf-8') if auto_imports_path.exists() else ''
-if 'com.dnnthanh.wallet.be.platform.autoconfigure.PlatformObservabilityAutoConfiguration' not in auto_imports:
-    errors.append('platform starter must auto-import PlatformObservabilityAutoConfiguration')
+# Runnable services scan the shared wallet root, matching the E-commerce reference shape.
+# This keeps platform configuration discoverable without maintaining AutoConfiguration.imports
+# every time a platform configuration class is added.
+for application_path in ROOT.glob('backend/services/be-*/src/main/java/**/*Application.java'):
+    application = application_path.read_text(encoding='utf-8')
+    if '@SpringBootApplication(scanBasePackages = "com.dnnthanh.wallet.be")' not in application:
+        errors.append(
+            f'runnable service must scan shared wallet root instead of relying on manual auto-import lists: '
+            f'{application_path.relative_to(ROOT)}'
+        )
 
 observability_config_path = ROOT / 'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/autoconfigure/PlatformObservabilityAutoConfiguration.java'
 observability_config = observability_config_path.read_text(encoding='utf-8') if observability_config_path.exists() else ''
