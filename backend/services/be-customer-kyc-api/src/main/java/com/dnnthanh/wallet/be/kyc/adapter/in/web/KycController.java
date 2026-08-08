@@ -1,5 +1,10 @@
 package com.dnnthanh.wallet.be.kyc.adapter.in.web;
 
+import static com.dnnthanh.wallet.be.kyc.constant.KycAuthorizationExpressions.KYC_REVIEW;
+import static com.dnnthanh.wallet.be.kyc.constant.KycAuthorizationExpressions.KYC_SELF_READ;
+import static com.dnnthanh.wallet.be.kyc.constant.KycAuthorizationExpressions.KYC_SELF_SUBMIT;
+import static com.dnnthanh.wallet.be.kyc.constant.KycAuthorizationExpressions.KYC_SELF_WRITE;
+
 import com.dnnthanh.wallet.be.kyc.api.request.KycReviewDecisionRequest;
 import com.dnnthanh.wallet.be.kyc.api.request.UpsertKycDraftRequest;
 import com.dnnthanh.wallet.be.kyc.api.response.KycResponse;
@@ -32,13 +37,13 @@ public class KycController {
     private final ReviewKycUseCase reviewKycUseCase;
 
     @GetMapping("/me")
-    @PreAuthorize("@walletAuthorization.hasPermission('kyc:self:read')")
+    @PreAuthorize(KYC_SELF_READ)
     public ApiResponse<KycResponse> getMyKyc() {
         return ApiResponse.success(KycResponse.from(getMyKycQuery.getMyKyc()));
     }
 
     @PutMapping("/me/draft")
-    @PreAuthorize("@walletAuthorization.hasPermission('kyc:self:write')")
+    @PreAuthorize(KYC_SELF_WRITE)
     public ApiResponse<KycResponse> upsertMyDraft(
             @Valid @RequestBody UpsertKycDraftRequest request) {
         return ApiResponse.success(
@@ -46,19 +51,19 @@ public class KycController {
     }
 
     @PostMapping("/me/submit")
-    @PreAuthorize("@walletAuthorization.hasPermission('kyc:self:submit')")
+    @PreAuthorize(KYC_SELF_SUBMIT)
     public ApiResponse<KycResponse> submitMyKyc() {
         return ApiResponse.success(KycResponse.from(submitMyKycUseCase.submitMyKyc()));
     }
 
     @GetMapping("/reviews/{kycId}")
-    @PreAuthorize("@walletAuthorization.hasPermission('kyc:review')")
+    @PreAuthorize(KYC_REVIEW)
     public ApiResponse<KycResponse> getReview(@PathVariable UUID kycId) {
         return ApiResponse.success(KycResponse.from(getKycReviewQuery.getReview(kycId)));
     }
 
     @PostMapping("/reviews/{kycId}/decision")
-    @PreAuthorize("@walletAuthorization.hasPermission('kyc:review')")
+    @PreAuthorize(KYC_REVIEW)
     public ApiResponse<KycResponse> review(
             @PathVariable UUID kycId, @Valid @RequestBody KycReviewDecisionRequest request) {
         return ApiResponse.success(
