@@ -4,13 +4,13 @@
 
 Verification evidence for DW-003 — Customer KYC on branch `feature/customer-kyc`, targeting `develop` via PR #5.
 
-## Verified functional head
+## Latest verified code head
 
-Functional implementation head verified before documentation/diagnostic cleanup:
+The latest code-changing head is:
 
-- Commit: `bc6d47ab6d6d0f8200fee3baac7535873fe49d0d`
+- Commit: `f7908b5bdfe1546ea3f52794962494d3c759b2f4`
 - GitHub Actions workflow: `CI`
-- Run: `31176105959` (`run_number: 356`)
+- Run: `31238487676` (`run_number: 366`)
 - Conclusion: `success`
 
 Successful jobs:
@@ -22,6 +22,8 @@ Successful jobs:
 - `dockerfile-validation`
 - `runtime-smoke`
 
+The `backend-format` job ran Spotless and confirmed that formatter output was already committed.
+
 The `runtime-smoke` job successfully:
 
 - built and started PostgreSQL, Redis, Keycloak, `be-auth-api`, and `be-customer-kyc-api`;
@@ -29,6 +31,17 @@ The `runtime-smoke` job successfully:
 - verified Keycloak `private_key_jwt` service authentication;
 - queried Auth API profile, permissions, and scopes using the obtained access token;
 - shut down the runtime stack cleanly.
+
+## Authorization-expression cleanup
+
+KYC controller authorization no longer repeats inline SpEL permission strings. The four endpoint authorization expressions are centralized in `KycAuthorizationExpressions` and used as compile-time constants:
+
+- `KYC_SELF_READ`
+- `KYC_SELF_WRITE`
+- `KYC_SELF_SUBMIT`
+- `KYC_REVIEW`
+
+For example, reviewer endpoints now use `@PreAuthorize(KYC_REVIEW)`. The change preserves the existing permission values while removing controller magic strings and following the module's named-constant convention.
 
 ## CI failures found and fixed during verification
 
@@ -52,10 +65,10 @@ The `runtime-smoke` job successfully:
 
 ## Test/report diagnostics
 
-A temporary `Backend Test Diagnostics` workflow was introduced only to upload Maven Surefire/Failsafe reports while the main CI job log endpoint was not returning usable Maven failure output. It is removed as part of final cleanup after the main CI became green.
+A temporary `Backend Test Diagnostics` workflow was introduced only to upload Maven Surefire/Failsafe reports while the main CI job log endpoint was not returning usable Maven failure output. It was removed after the normal CI became green.
 
 ## Final verification rule
 
-The reporting/cleanup commits change the branch head. Therefore the PR must only be considered ready after the normal `CI` workflow for the final cleanup head reaches terminal `success` for every required job, including `runtime-smoke`.
+This report update changes only verification documentation and therefore creates a newer branch head than the latest code-changing commit. The normal `CI` workflow for the final branch head must still reach terminal `success` for every required job, including `runtime-smoke`; the exact final-head run is recorded in the PR description after verification.
 
 No merge into `master` is part of DW-003 delivery.
