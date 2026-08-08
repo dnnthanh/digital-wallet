@@ -88,13 +88,13 @@ class KycControllerTest {
 
     @Test
     void endpointsDeclareRequiredEffectivePermissions() throws Exception {
-        assertPermission("getMyKyc", "kyc:self:read");
-        assertPermission("upsertMyDraft", "kyc:self:write", UpsertKycDraftRequest.class);
-        assertPermission("submitMyKyc", "kyc:self:submit");
-        assertPermission("getReview", "kyc:review", UUID.class);
+        assertPermission("getMyKyc", "KYC_SELF_READ");
+        assertPermission("upsertMyDraft", "KYC_SELF_WRITE", UpsertKycDraftRequest.class);
+        assertPermission("submitMyKyc", "KYC_SELF_SUBMIT");
+        assertPermission("getReview", "KYC_REVIEW", UUID.class);
         assertPermission(
                 "review",
-                "kyc:review",
+                "KYC_REVIEW",
                 UUID.class,
                 com.dnnthanh.wallet.be.kyc.api.request.KycReviewDecisionRequest.class);
     }
