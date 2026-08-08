@@ -27,7 +27,7 @@ class KeycloakRealmContractTest {
                         "\"jwks.url\" : \"http://be-auth-api:8080/.well-known/wallet-client-jwks.json\"");
         assertThat(realm).doesNotContain("AUTH_KEYCLOAK_CLIENT_SECRET");
         assertThat(realm).doesNotContain("\"secret\"");
-        assertThat(realm).contains("permission:self:read");
+        assertThat(realm).contains("permission:SELF_READ");
         assertThat(realm).contains("role:wallet-user");
         assertThat(realm).contains("\"name\" : \"bank\"");
         assertThat(realm).contains("\"name\" : \"demo-branch\"");
