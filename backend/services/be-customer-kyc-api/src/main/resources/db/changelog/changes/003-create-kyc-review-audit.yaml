@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-kyc-review-audit
+      author: openai
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE TABLE kyc_review_audit (
+                  audit_id UUID PRIMARY KEY,
+                  kyc_id UUID NOT NULL,
+                  reviewer_user_id VARCHAR(255) NOT NULL,
+                  decision VARCHAR(32) NOT NULL,
+                  rejection_reason_code VARCHAR(128),
+                  reviewed_at TIMESTAMPTZ NOT NULL,
+                  CONSTRAINT fk_kyc_review_audit_kyc
+                      FOREIGN KEY (kyc_id) REFERENCES customer_kyc(kyc_id)
+              );
+
+              CREATE INDEX idx_kyc_review_audit_kyc_reviewed_at
+                  ON kyc_review_audit (kyc_id, reviewed_at);

@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
+/** Common resource-server security baseline. */
 @Configuration
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableMethodSecurity
@@ -25,13 +26,13 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(
                         registry ->
                                 registry.requestMatchers(
+                                                "/public/**",
                                                 "/actuator/health/**",
                                                 "/actuator/prometheus",
                                                 "/.well-known/wallet-client-jwks.json",
                                                 "/error")
                                         .permitAll()
-                                        .requestMatchers(
-                                                "/api/v1/**", "/private/**", "/internal/**")
+                                        .requestMatchers("/private/**", "/internal/**")
                                         .authenticated()
                                         .anyRequest()
                                         .permitAll())

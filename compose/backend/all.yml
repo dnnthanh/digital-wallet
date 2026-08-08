@@ -8,6 +8,10 @@ services:
     extends:
       file: compose/backend/auth.yml
       service: be-auth-api
+  be-customer-kyc-api:
+    extends:
+      file: compose/backend/customer-kyc.yml
+      service: be-customer-kyc-api
 volumes:
   auth-client-key:
 networks:

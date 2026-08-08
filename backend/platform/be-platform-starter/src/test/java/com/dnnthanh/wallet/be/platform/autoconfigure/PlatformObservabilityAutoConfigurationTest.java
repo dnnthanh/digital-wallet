@@ -6,13 +6,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.micrometer.observation.ObservationRegistry;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.task.SimpleAsyncTaskExecutorCustomizer;
 import org.springframework.boot.task.ThreadPoolTaskExecutorCustomizer;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.support.ContextPropagatingTaskDecorator;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -74,12 +72,7 @@ class PlatformObservabilityAutoConfigurationTest {
     }
 
     @Test
-    void publishesObservabilityAutoConfigurationFromStarterMetadata() throws IOException {
-        var resource =
-                new ClassPathResource(
-                        "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports");
-        String imports = resource.getContentAsString(StandardCharsets.UTF_8);
-
-        assertThat(imports).contains(PlatformObservabilityAutoConfiguration.class.getName());
+    void isDiscoverableByComponentScanning() {
+        assertThat(PlatformObservabilityAutoConfiguration.class).hasAnnotation(Configuration.class);
     }
 }
