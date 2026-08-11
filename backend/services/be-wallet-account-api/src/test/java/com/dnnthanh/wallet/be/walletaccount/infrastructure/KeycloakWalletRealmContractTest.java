@@ -15,10 +15,12 @@ class KeycloakWalletRealmContractTest {
                         .normalize();
         String realm = Files.readString(realmPath);
 
-        assertThat(realm).contains("permission:wallet:self:create");
-        assertThat(realm).contains("permission:wallet:self:read");
+        assertThat(realm).contains("permission:WALLET_SELF_CREATE");
+        assertThat(realm).contains("permission:WALLET_SELF_READ");
         assertThat(realm).contains("role:wallet-user");
         assertThat(realm).contains("${KEYCLOAK_DEMO_USER_PASSWORD}");
+        assertThat(realm).doesNotContain("permission:wallet:self:create");
+        assertThat(realm).doesNotContain("permission:wallet:self:read");
         assertThat(realm).doesNotContain("WALLET_DB_PASSWORD");
         assertThat(realm).doesNotContain("change-me");
     }
