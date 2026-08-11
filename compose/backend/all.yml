@@ -12,6 +12,10 @@ services:
     extends:
       file: compose/backend/customer-kyc.yml
       service: be-customer-kyc-api
+  be-wallet-account-api:
+    extends:
+      file: compose/backend/wallet-account.yml
+      service: be-wallet-account-api
 volumes:
   auth-client-key:
 networks:

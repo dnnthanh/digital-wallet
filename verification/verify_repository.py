@@ -10,6 +10,8 @@ errors = []
 required = [
     'AGENTS.MD', '.agent/PLAN.MD', '.agent/CONVENTIONS.MD',
     '.agent/specs/DW-001-platform-foundation.md',
+    '.agent/specs/DW-004-wallet-account.md',
+    '.agent/plans/2026-08-11-DW-004-wallet-account.md',
     'docs/00-project-context/PROJECT-BRIEF.md',
     'docs/00-project-context/ARCHITECTURE-DECISIONS.md',
     'docs/00-project-context/FEATURE-INDEX.md',
@@ -29,6 +31,9 @@ required = [
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/constant/PlatformInvariantMessages.java',
     'backend/platform/be-platform-starter/src/main/java/com/dnnthanh/wallet/be/platform/i18n/I18nConstants.java',
     'backend/platform/be-platform-cache-starter/pom.xml',
+    'backend/services/be-wallet-account-api/pom.xml',
+    'backend/services/be-wallet-account-api/src/main/resources/application.yml',
+    'backend/services/be-wallet-account-api/src/main/resources/db/changelog/db.changelog-master.yaml',
     'backend/Dockerfile.runtime',
     'backend/Dockerfile.service',
     'backend/docker/runtime-entrypoint.sh',
@@ -37,6 +42,8 @@ required = [
     'docker-compose.yml',
     'compose/infrastructure.yml',
     'compose/backend/all.yml',
+    'compose/backend/wallet-account.yml',
+    'infrastructure/postgres/init/003-wallet-account.sh',
     'compose-up.sh',
 ]
 for path in required:
@@ -86,6 +93,7 @@ for pom in [
     ROOT / 'backend/pom.xml',
     ROOT / 'backend/platform/be-platform-starter/pom.xml',
     ROOT / 'backend/platform/be-platform-cache-starter/pom.xml',
+    ROOT / 'backend/services/be-wallet-account-api/pom.xml',
 ]:
     if pom.exists():
         try:
@@ -255,6 +263,21 @@ for service_dir in sorted(services_root.glob('be-*')) if services_root.exists() 
             f'Kafka service must import classpath:platform-kafka.yml in application.yml: '
             f'{application_yml.relative_to(ROOT)}'
         )
+
+wallet_root = ROOT / 'backend/services/be-wallet-account-api'
+if wallet_root.exists():
+    wallet_text = '\n'.join(
+        path.read_text(encoding='utf-8')
+        for path in wallet_root.glob('src/main/**/*.java')
+    )
+    if re.search(r'\b(?:available|current|ledger|held)?balance\b', wallet_text, re.IGNORECASE):
+        errors.append('DW-004 Wallet Account must not introduce balance state before Ledger/Balance features')
+    wallet_migrations = '\n'.join(
+        path.read_text(encoding='utf-8')
+        for path in wallet_root.glob('src/main/resources/db/changelog/**/*.yaml')
+    )
+    if re.search(r'\b(?:available|current|ledger|held)?balance\b', wallet_migrations, re.IGNORECASE):
+        errors.append('DW-004 wallet migrations must not persist balance columns')
 
 for path in ROOT.rglob('*'):
     if path.is_file() and path.name != '.gitignore' and '.git' not in path.parts:
