@@ -78,7 +78,8 @@ class WalletAccountOutboxAtomicityIntegrationTest {
         assertThat(eventType).isEqualTo("WALLET_ACCOUNT_CREATED");
         assertThat(payload).contains(wallet.walletId().toString(), "user-1", "VND", "ACTIVE");
         assertThat(payload)
-                .doesNotContain("scopePath", "/bank/demo-branch", "balance", "permissions", "scopes");
+                .doesNotContain(
+                        "scopePath", "/bank/demo-branch", "balance", "permissions", "scopes");
     }
 
     @Test
@@ -114,7 +115,6 @@ class WalletAccountOutboxAtomicityIntegrationTest {
     }
 
     private static WalletAccount wallet() {
-        return WalletAccount.create(
-                UUID.randomUUID(), "user-1", "/bank/demo-branch", "VND", NOW);
+        return WalletAccount.create(UUID.randomUUID(), "user-1", "/bank/demo-branch", "VND", NOW);
     }
 }
