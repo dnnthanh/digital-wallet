@@ -62,7 +62,9 @@ class KycVerificationRestAdapterTest {
                                 "{\"data\":{\"userId\":\"user-1\",\"scopePath\":\"/bank/demo-branch\",\"status\":\"PENDING_REVIEW\"}}",
                                 MediaType.APPLICATION_JSON));
 
-        assertError(() -> adapter.requireVerified("user-1"), WalletAccountErrorCode.WALLET_KYC_REQUIRED);
+        assertError(
+                () -> adapter.requireVerified("user-1"),
+                WalletAccountErrorCode.WALLET_KYC_REQUIRED);
         server.verify();
     }
 
@@ -74,7 +76,9 @@ class KycVerificationRestAdapterTest {
                                 "{\"data\":{\"userId\":\"other-user\",\"scopePath\":\"/bank/demo-branch\",\"status\":\"VERIFIED\"}}",
                                 MediaType.APPLICATION_JSON));
 
-        assertError(() -> adapter.requireVerified("user-1"), WalletAccountErrorCode.WALLET_KYC_UNAVAILABLE);
+        assertError(
+                () -> adapter.requireVerified("user-1"),
+                WalletAccountErrorCode.WALLET_KYC_UNAVAILABLE);
         server.verify();
     }
 
@@ -83,7 +87,9 @@ class KycVerificationRestAdapterTest {
         server.expect(requestTo("http://kyc.test/private/api/v1/kyc/me"))
                 .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
 
-        assertError(() -> adapter.requireVerified("user-1"), WalletAccountErrorCode.WALLET_KYC_UNAVAILABLE);
+        assertError(
+                () -> adapter.requireVerified("user-1"),
+                WalletAccountErrorCode.WALLET_KYC_UNAVAILABLE);
         server.verify();
     }
 

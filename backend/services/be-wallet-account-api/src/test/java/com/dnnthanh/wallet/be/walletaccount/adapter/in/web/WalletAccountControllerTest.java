@@ -56,7 +56,8 @@ class WalletAccountControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"currency\":\"VND\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.walletId").value("00000000-0000-0000-0000-000000000001"))
+                .andExpect(
+                        jsonPath("$.data.walletId").value("00000000-0000-0000-0000-000000000001"))
                 .andExpect(jsonPath("$.data.currency").value("VND"))
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.data.balance").doesNotExist());

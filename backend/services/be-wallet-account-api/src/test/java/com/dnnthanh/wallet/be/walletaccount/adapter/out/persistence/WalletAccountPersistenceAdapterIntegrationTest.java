@@ -69,8 +69,7 @@ class WalletAccountPersistenceAdapterIntegrationTest {
     @Test
     void databaseUniqueConstraintMapsDuplicateUserCurrencyToStableConflict() {
         repository.save(
-                WalletAccount.create(
-                        UUID.randomUUID(), "user-1", "/bank/demo-branch", "VND", NOW));
+                WalletAccount.create(UUID.randomUUID(), "user-1", "/bank/demo-branch", "VND", NOW));
 
         assertThatThrownBy(
                         () ->
