@@ -14,6 +14,10 @@ public enum WalletAccountErrorCode implements ErrorCode {
             "WALLET_KYC_UNAVAILABLE",
             "error.wallet.kyc-unavailable",
             HttpStatus.SERVICE_UNAVAILABLE),
+    WALLET_AUTHORIZATION_UNAVAILABLE(
+            "WALLET_AUTHORIZATION_UNAVAILABLE",
+            "error.wallet.authorization-unavailable",
+            HttpStatus.SERVICE_UNAVAILABLE),
     WALLET_UNSUPPORTED_CURRENCY(
             "WALLET_UNSUPPORTED_CURRENCY",
             "error.wallet.unsupported-currency",

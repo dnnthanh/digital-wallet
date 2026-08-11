@@ -39,6 +39,16 @@
         "composite" : false
       },
       {
+        "name" : "permission:wallet:self:create",
+        "description" : "Open a wallet account for the authenticated principal",
+        "composite" : false
+      },
+      {
+        "name" : "permission:wallet:self:read",
+        "description" : "Read wallet accounts owned by the authenticated principal",
+        "composite" : false
+      },
+      {
         "name" : "role:wallet-user",
         "description" : "Base wallet user role",
         "composite" : true,
@@ -47,7 +57,9 @@
             "permission:SELF_READ",
             "permission:KYC_SELF_READ",
             "permission:KYC_SELF_WRITE",
-            "permission:KYC_SELF_SUBMIT"
+            "permission:KYC_SELF_SUBMIT",
+            "permission:wallet:self:create",
+            "permission:wallet:self:read"
           ]
         }
       },
