@@ -42,7 +42,8 @@ public class AuthApiCurrentAuthorizationAdapter {
                             .retrieve()
                             .body(new ParameterizedTypeReference<>() {});
 
-            AuthPermissionsResponse permissions = Objects.requireNonNull(permissionsResponse).data();
+            AuthPermissionsResponse permissions =
+                    Objects.requireNonNull(permissionsResponse).data();
             AuthScopesResponse scopes = Objects.requireNonNull(scopesResponse).data();
             if (Objects.isNull(permissions) || Objects.isNull(scopes)) {
                 throw unavailable();
