@@ -30,14 +30,17 @@ public class WalletAccountController {
 
     @PostMapping
     @PreAuthorize("@walletAuthorization.hasPermission('WALLET_SELF_CREATE')")
-    public ApiResponse<WalletAccountResponse> openWallet(@Valid @RequestBody OpenWalletRequest request) {
-        return ApiResponse.success(mapper.modelToResponse(openUseCase.open(mapper.requestToCommand(request))));
+    public ApiResponse<WalletAccountResponse> openWallet(
+            @Valid @RequestBody OpenWalletRequest request) {
+        return ApiResponse.success(
+                mapper.modelToResponse(openUseCase.open(mapper.requestToCommand(request))));
     }
 
     @GetMapping("/me")
     @PreAuthorize("@walletAuthorization.hasPermission('WALLET_SELF_READ')")
     public ApiResponse<List<WalletAccountResponse>> listMyWallets() {
-        return ApiResponse.success(listQuery.listMyWallets().stream().map(mapper::modelToResponse).toList());
+        return ApiResponse.success(
+                listQuery.listMyWallets().stream().map(mapper::modelToResponse).toList());
     }
 
     @GetMapping("/{walletId}")

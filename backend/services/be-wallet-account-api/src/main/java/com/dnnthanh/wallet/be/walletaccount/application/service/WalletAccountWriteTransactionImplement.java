@@ -23,7 +23,8 @@ public class WalletAccountWriteTransactionImplement implements WalletAccountWrit
     public WalletAccount open(String userId, String scopePath, String currency) {
         Instant now = clock.instant();
         WalletAccount saved =
-                repository.save(WalletAccount.create(UUID.randomUUID(), userId, scopePath, currency, now));
+                repository.save(
+                        WalletAccount.create(UUID.randomUUID(), userId, scopePath, currency, now));
         outboxPort.appendCreated(
                 new WalletAccountCreatedPayload(
                         saved.walletId(),

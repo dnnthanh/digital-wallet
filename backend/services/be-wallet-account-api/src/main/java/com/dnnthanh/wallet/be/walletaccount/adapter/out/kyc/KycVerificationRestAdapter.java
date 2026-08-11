@@ -34,7 +34,9 @@ public class KycVerificationRestAdapter implements KycVerificationPort {
                     restClient
                             .get()
                             .uri("/private/api/v1/kyc/me")
-                            .header(HttpHeaders.AUTHORIZATION, bearerTokenPort.authorizationHeader())
+                            .header(
+                                    HttpHeaders.AUTHORIZATION,
+                                    bearerTokenPort.authorizationHeader())
                             .retrieve()
                             .body(KycApiResponse.class);
             KycResponseData data = Objects.requireNonNull(response).data();
