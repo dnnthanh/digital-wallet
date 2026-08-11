@@ -33,7 +33,9 @@ class AuthApiCurrentAuthorizationAdapterTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        adapter = new AuthApiCurrentAuthorizationAdapter(builder.baseUrl("http://auth.test").build(), bearerTokenPort);
+        adapter =
+                new AuthApiCurrentAuthorizationAdapter(
+                        builder.baseUrl("http://auth.test").build(), bearerTokenPort);
         when(bearerTokenPort.authorizationHeader()).thenReturn("Bearer access-token");
     }
 
@@ -41,10 +43,16 @@ class AuthApiCurrentAuthorizationAdapterTest {
     void resolvesEffectivePermissionsAndScopesWithCurrentBearer() {
         server.expect(requestTo("http://auth.test/private/api/v1/me/permissions"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
-                .andRespond(withSuccess("{\"data\":{\"permissions\":[\"WALLET_SELF_READ\"]}}", MediaType.APPLICATION_JSON));
+                .andRespond(
+                        withSuccess(
+                                "{\"data\":{\"permissions\":[\"WALLET_SELF_READ\"]}}",
+                                MediaType.APPLICATION_JSON));
         server.expect(requestTo("http://auth.test/private/api/v1/me/scopes"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
-                .andRespond(withSuccess("{\"data\":{\"scopes\":[\"/bank/demo-branch\"]}}", MediaType.APPLICATION_JSON));
+                .andRespond(
+                        withSuccess(
+                                "{\"data\":{\"scopes\":[\"/bank/demo-branch\"]}}",
+                                MediaType.APPLICATION_JSON));
 
         var authorization = adapter.currentAuthorization();
 
@@ -63,7 +71,9 @@ class AuthApiCurrentAuthorizationAdapterTest {
                         BusinessException.class,
                         exception ->
                                 assertThat(exception.getErrorCode())
-                                        .isEqualTo(WalletAccountErrorCode.WALLET_AUTHORIZATION_UNAVAILABLE));
+                                        .isEqualTo(
+                                                WalletAccountErrorCode
+                                                        .WALLET_AUTHORIZATION_UNAVAILABLE));
         server.verify();
     }
 }
