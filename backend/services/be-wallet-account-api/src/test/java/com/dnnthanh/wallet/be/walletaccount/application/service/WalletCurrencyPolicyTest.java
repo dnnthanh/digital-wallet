@@ -29,7 +29,8 @@ class WalletCurrencyPolicyTest {
                         exception ->
                                 assertThat(exception.getErrorCode())
                                         .isEqualTo(
-                                                WalletAccountErrorCode.WALLET_UNSUPPORTED_CURRENCY));
+                                                WalletAccountErrorCode
+                                                        .WALLET_UNSUPPORTED_CURRENCY));
     }
 
     @Test
@@ -40,6 +41,7 @@ class WalletCurrencyPolicyTest {
                         exception ->
                                 assertThat(exception.getErrorCode())
                                         .isEqualTo(
-                                                WalletAccountErrorCode.WALLET_UNSUPPORTED_CURRENCY));
+                                                WalletAccountErrorCode
+                                                        .WALLET_UNSUPPORTED_CURRENCY));
     }
 }

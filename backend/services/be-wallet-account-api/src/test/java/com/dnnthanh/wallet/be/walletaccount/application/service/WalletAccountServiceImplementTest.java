@@ -122,8 +122,7 @@ class WalletAccountServiceImplementTest {
                 WalletAccount.create(
                         laterId, "user-1", "/bank/demo-branch", "USD", NOW.plusSeconds(10));
         WalletAccount earlier =
-                WalletAccount.create(
-                        earlierId, "user-1", "/bank/demo-branch", "VND", NOW);
+                WalletAccount.create(earlierId, "user-1", "/bank/demo-branch", "VND", NOW);
         when(currentActorPort.userId()).thenReturn("user-1");
         when(repository.findAllByUserId("user-1")).thenReturn(List.of(later, earlier));
 
