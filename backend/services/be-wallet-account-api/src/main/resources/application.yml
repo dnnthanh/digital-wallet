@@ -1,0 +1,3 @@
+spring:
+  application:
+    name: be-wallet-account-api
