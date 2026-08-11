@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-wallet-outbox
+      author: openai
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE TABLE wallet_outbox_event (
+                  event_id UUID PRIMARY KEY,
+                  aggregate_id UUID NOT NULL,
+                  event_type VARCHAR(128) NOT NULL,
+                  payload JSONB NOT NULL,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  published_at TIMESTAMPTZ,
+                  attempt_count INTEGER NOT NULL DEFAULT 0
+              );
+
+              CREATE INDEX idx_wallet_outbox_unpublished
+                  ON wallet_outbox_event (created_at)
+                  WHERE published_at IS NULL;
