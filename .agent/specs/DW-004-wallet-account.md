@@ -2,7 +2,7 @@
 
 ## Status
 
-APPROVED FOR IMPLEMENTATION on `feature/wallet-account`, targeting `develop`.
+IMPLEMENTED AND VERIFIED on `feature/wallet-account`, targeting `develop`.
 
 ## Goal
 
@@ -15,12 +15,14 @@ DW-004 owns:
 - one wallet account per authenticated Keycloak subject and currency;
 - customer self-service wallet opening and read/list flows;
 - KYC-verification gating through the DW-003 service contract;
+- effective-permission resolution through the DW-002 Auth API;
 - PostgreSQL persistence and append-only Liquibase migrations;
 - stable wallet identity, ownership, currency, scope, lifecycle status, timestamps, and optimistic version metadata;
 - stable wallet error codes and REST contracts;
 - a typed `WALLET_ACCOUNT_CREATED` payload written through a local transactional outbox boundary;
 - Keycloak permission/composite-role additions required for wallet self-service;
-- Docker Compose, Testcontainers, repository-quality, Maven/Spotless, Dockerfile, and GitHub Actions verification for the new service.
+- explicit HTTP dependency deadlines without blind retry;
+- Docker Compose, Testcontainers, repository-quality, Maven/Spotless, Dockerfile, runtime-smoke, and GitHub Actions verification for the new service.
 
 DW-004 does not own:
 
@@ -58,7 +60,7 @@ adapter/in/web
   -> PostgreSQL
 ```
 
-KYC verification is an outbound cross-context port implemented with the existing DW-003 REST contract. Application/domain code must not depend on Spring Security, KYC REST DTOs, JPA entities, or adapter classes.
+KYC and authorization resolution are outbound cross-context ports implemented with existing DW-003/DW-002 REST contracts. Application/domain code must not depend on Spring Security, remote REST DTOs, JPA entities, or adapter classes.
 
 ## Domain model
 
@@ -108,6 +110,26 @@ Rules:
 - Wallet Account never reads KYC tables directly;
 - KYC network resolution must complete before the local PostgreSQL write transaction begins.
 
+## Authorization integration
+
+Keycloak remains the source of truth, while DW-002 Auth API resolves effective permissions/scopes for the current bearer token.
+
+Wallet Account calls:
+
+```text
+GET /private/api/v1/me/permissions
+GET /private/api/v1/me/scopes
+```
+
+Rules:
+
+- authorization dependency failure/malformed response -> `WALLET_AUTHORIZATION_UNAVAILABLE`;
+- resolution fails closed;
+- the Wallet Account context owns no IAM tables and does not duplicate the DW-002 Redis authorization cache;
+- required realm roles are `permission:WALLET_SELF_CREATE` and `permission:WALLET_SELF_READ`;
+- `role:wallet-user` composes those permissions in addition to existing KYC self-service permissions;
+- permission names intentionally match the DW-002 mapper contract, which returns the exact suffix following `permission:`.
+
 ## Public REST contracts
 
 All endpoints require a valid Keycloak bearer token and use the platform `ApiResponse` envelope.
@@ -149,19 +171,6 @@ Returns only wallets owned by the authenticated subject, ordered deterministical
 Permission: `WALLET_SELF_READ`.
 
 Lookup is ownership-scoped. A wallet owned by another user is not disclosed and follows `WALLET_NOT_FOUND` semantics.
-
-## Authorization integration
-
-Keycloak remains the source of truth.
-
-Required realm permissions:
-
-- `permission:wallet:self:create` mapped to code `WALLET_SELF_CREATE`;
-- `permission:wallet:self:read` mapped to code `WALLET_SELF_READ`.
-
-`role:wallet-user` includes both permissions in addition to the existing KYC self-service permissions.
-
-The Wallet Account context owns no IAM tables and does not duplicate the DW-002 Redis authorization cache.
 
 ## Persistence model
 
@@ -215,13 +224,14 @@ WalletAccountCreatedPayload(
 
 Event type: `WALLET_ACCOUNT_CREATED`.
 
-The event intentionally excludes balance data, KYC profile/document data, bearer tokens, Keycloak roles, and authorization scopes.
+The event intentionally excludes balance data, KYC profile/document data, bearer tokens, Keycloak roles, authorization permissions/scopes, and trace context.
 
 ## Error codes
 
 - `WALLET_NOT_FOUND` -> 404;
 - `WALLET_KYC_REQUIRED` -> 409;
 - `WALLET_KYC_UNAVAILABLE` -> 503;
+- `WALLET_AUTHORIZATION_UNAVAILABLE` -> 503;
 - `WALLET_UNSUPPORTED_CURRENCY` -> 400;
 - `WALLET_ALREADY_EXISTS` -> 409.
 
@@ -236,12 +246,28 @@ Bean Validation handles request-shape errors through the existing platform valid
 - no cross-context database access and no XA/distributed transaction;
 - no direct Kafka publish inside the transaction.
 
+## Reliability
+
+Auth and KYC calls use Spring-managed `RestClient` and inherit platform observation/tracing.
+
+Explicit global HTTP-client deadlines for this service are YAML/environment-backed:
+
+```yaml
+spring:
+  http:
+    clients:
+      connect-timeout: ${WALLET_HTTP_CONNECT_TIMEOUT:2s}
+      read-timeout: ${WALLET_HTTP_READ_TIMEOUT:3s}
+```
+
+DW-004 adds no blind retry. Dependency timeout/unavailability maps to typed fail-closed errors as described above.
+
 ## Observability and security
 
 - inherit platform HTTP tracing, correlation, structured logging, and common error handling;
 - do not manually propagate `traceparent`, `tracestate`, or synthetic trace ids;
 - log only identifiers, currency, status, actor id/type, action, outcome, and latency-safe metadata;
-- never log bearer tokens or the KYC response body;
+- never log bearer tokens or remote KYC/Auth response bodies;
 - `correlationId` remains distinct from distributed trace context.
 
 ## Configuration
@@ -249,9 +275,11 @@ Bean Validation handles request-shape errors through the existing platform valid
 Service configuration is YAML/environment backed:
 
 - datasource host/port/name/user/password;
+- Auth API base URL;
 - KYC base URL;
 - supported currencies;
-- Keycloak issuer/JWK URLs.
+- Keycloak issuer/JWK URLs;
+- HTTP connect/read deadlines.
 
 `WALLET_DB_PASSWORD` has no source-controlled secret value. Supported currencies are non-secret product configuration and may have a local/demo default of `VND`.
 
@@ -266,24 +294,26 @@ Service configuration is YAML/environment backed:
 7. stable duplicate-wallet conflict test;
 8. PostgreSQL Testcontainers migration/repository integration;
 9. unique `(user_id, currency)` constraint test;
-10. atomic wallet + outbox integration test;
+10. atomic wallet + outbox integration and rollback test;
 11. typed outbox payload test with no balance/KYC/authorization leakage;
 12. controller contract and permission tests;
-13. full Spring Security 401/403 coverage for wallet endpoints;
-14. Keycloak realm contract for wallet permissions/composite role;
-15. Maven verify and Spotless;
-16. repository-quality gate including service scan-boundary checks;
-17. root and split Docker Compose validation;
-18. Dockerfile BuildKit validation for `be-wallet-account-api`;
-19. runtime smoke starts PostgreSQL, Redis, Keycloak, Auth, KYC, and Wallet Account services and checks health;
-20. final GitHub Actions status inspected on the final pushed head.
+13. Spring Security 401/403 coverage for wallet endpoints;
+14. Auth API effective-permission fail-closed tests;
+15. Keycloak realm contract for wallet permissions/composite role;
+16. HTTP dependency deadline configuration contract test;
+17. Maven verify and Spotless;
+18. repository-quality gate including service scan-boundary and no-balance checks;
+19. root and split Docker Compose validation;
+20. Dockerfile BuildKit validation for `be-wallet-account-api`;
+21. runtime smoke starts PostgreSQL, Redis, Keycloak, Auth, KYC, and Wallet Account services and checks health;
+22. final GitHub Actions status inspected on the final pushed head and on the PR head.
 
 ## Definition of done
 
 - `.agent/plans/2026-08-11-DW-004-wallet-account.md` maps this spec to TDD tasks;
 - implementation follows Hexagonal dependencies and owns no cross-context database reads;
-- required unit/integration/concurrency tests pass;
+- required unit/integration/concurrency/atomicity/security tests pass;
 - verification evidence is stored under `.agent/reports/DW-004-wallet-account-verification.md`;
-- branch is `feature/wallet-account` created from current `develop`;
+- branch is `feature/wallet-account` created from `develop`;
 - PR targets `develop` only;
 - no merge into `master` is performed.
