@@ -4,6 +4,10 @@ server:
 spring:
   application:
     name: be-wallet-account-api
+  http:
+    clients:
+      connect-timeout: ${WALLET_HTTP_CONNECT_TIMEOUT:2s}
+      read-timeout: ${WALLET_HTTP_READ_TIMEOUT:3s}
   datasource:
     url: jdbc:postgresql://${WALLET_DB_HOST:localhost}:${WALLET_DB_PORT:5432}/${WALLET_DB_NAME:wallet_account_db}
     username: ${WALLET_DB_USER:wallet_account}
