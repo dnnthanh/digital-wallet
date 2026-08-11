@@ -88,5 +88,6 @@
     <module>platform/be-platform-cache-starter</module>
     <module>services/be-auth-api</module>
     <module>services/be-customer-kyc-api</module>
+    <module>services/be-wallet-account-api</module>
   </modules>
 </project>

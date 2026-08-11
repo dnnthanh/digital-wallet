@@ -1,0 +1,42 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: be-wallet-account-api
+  http:
+    clients:
+      connect-timeout: ${WALLET_HTTP_CONNECT_TIMEOUT:2s}
+      read-timeout: ${WALLET_HTTP_READ_TIMEOUT:3s}
+  datasource:
+    url: jdbc:postgresql://${WALLET_DB_HOST:localhost}:${WALLET_DB_PORT:5432}/${WALLET_DB_NAME:wallet_account_db}
+    username: ${WALLET_DB_USER:wallet_account}
+    password: ${WALLET_DB_PASSWORD}
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/digital-wallet}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8180/realms/digital-wallet/protocol/openid-connect/certs}
+
+wallet:
+  account:
+    auth-api-base-url: ${AUTH_API_BASE_URL:http://localhost:8081}
+    kyc-base-url: ${WALLET_KYC_BASE_URL:http://localhost:8082}
+    supported-currencies: ${WALLET_SUPPORTED_CURRENCIES:VND}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

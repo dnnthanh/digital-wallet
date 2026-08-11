@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-wallet-account
+      author: openai
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              CREATE TABLE wallet_account (
+                  wallet_id UUID PRIMARY KEY,
+                  user_id VARCHAR(255) NOT NULL,
+                  scope_path VARCHAR(512) NOT NULL,
+                  currency VARCHAR(3) NOT NULL,
+                  status VARCHAR(32) NOT NULL,
+                  created_at TIMESTAMPTZ NOT NULL,
+                  updated_at TIMESTAMPTZ NOT NULL,
+                  version BIGINT NOT NULL DEFAULT 0,
+                  CONSTRAINT uk_wallet_account_user_currency UNIQUE (user_id, currency)
+              );
+
+              CREATE INDEX idx_wallet_account_user_created
+                  ON wallet_account (user_id, created_at, wallet_id);
